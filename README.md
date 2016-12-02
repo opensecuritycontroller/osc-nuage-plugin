@@ -1,0 +1,1 @@
+# osc-nuage-plugin
