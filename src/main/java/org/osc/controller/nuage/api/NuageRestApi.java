@@ -19,6 +19,8 @@ public class NuageRestApi implements AutoCloseable {
 
     public NuageRestApi(VirtualizationConnectorElement vc) throws Exception {
         this.vc = vc;
+        //Fix CCL issue ClassUtils.class in Spring
+        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
         this.vsdSession = getNuageVSDSession();
     }
 

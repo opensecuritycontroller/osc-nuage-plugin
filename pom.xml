@@ -1,229 +1,289 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	<modelVersion>4.0.0</modelVersion>
-	
-	<groupId>org.osc.controller.nuage</groupId>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.osc.controller.nuage</groupId>
     <version>1.0</version>
     <packaging>jar</packaging>
-	<artifactId>NuageSdnControllerPlugin</artifactId>
-	<name>NuageSdnControllerPlugin</name>
+    <artifactId>NuageSdnControllerPlugin</artifactId>
+    <name>NuageSdnControllerPlugin</name>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
-    <!-- <repositories>
-        <repository>
-            <id>local-maven-repo</id>
-            <url>file:///${project.basedir}/local-maven-repo</url>
-        </repository>
-    </repositories> -->
-	<dependencies>
-	   <dependency>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
             <groupId>org.osc.core</groupId>
             <artifactId>IscSdnControllerPlugin</artifactId>
             <version>1.0</version>
-        </dependency>
-
-		<dependency>
-			<groupId>org.apache.directory.studio</groupId>
-			<artifactId>org.apache.commons.lang</artifactId>
-			<version>2.6</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-bundle</artifactId>
-			<version>1.12</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.gson</groupId>
-			<artifactId>gson</artifactId>
-			<version>2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>17.0</version>
-		</dependency>
-		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
-		</dependency>
-		
-		<!-- bambou dependency -->
-		<dependency>
-         <groupId>org.slf4j</groupId>
-         <artifactId>slf4j-api</artifactId>
-         <version>1.7.18</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-	         <groupId>com.fasterxml.jackson.core</groupId>
-	         <artifactId>jackson-databind</artifactId>
-	         <version>2.7.2</version>
-	    </dependency>
-	    <dependency>
-	         <groupId>org.springframework</groupId>
-	         <artifactId>spring-web</artifactId>
-	         <version>4.2.5.RELEASE</version>
-	    </dependency>
-	    <dependency>
-	         <groupId>commons-codec</groupId>
-	         <artifactId>commons-codec</artifactId>
-	         <version>1.10</version>
-	    </dependency>
-		<dependency>
-		   <groupId>org.springframework</groupId>
-		   <artifactId>spring-test</artifactId>
-		   <version>4.2.5.RELEASE</version>
-		   <scope>test</scope>
-		</dependency>
-		<dependency>
-		   <groupId>org.slf4j</groupId>
-		   <artifactId>slf4j-simple</artifactId>
-		   <version>1.7.18</version>
-		   <scope>test</scope>
-		</dependency>
-		<!-- endof bambou dependency -->
-		
-		<dependency>
-             <groupId>net.nuagenetworks</groupId>
-             <artifactId>bambou</artifactId>
-             <version>2.0.0</version>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+             <version>2.8.5</version>
+         <scope>runtime</scope>
         </dependency>
-		<dependency>
-		     <groupId>net.nuagenetworks</groupId>
-		     <artifactId>vspk</artifactId>
-		     <version>4.0</version>
-		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>org.apache.directory.studio</groupId>
+            <artifactId>org.apache.commons.lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.service.component.annotations</artifactId>
+            <version>1.3.0</version>
+            <!-- These annotations are build-time only and not needed at runtime -->
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.nuagenetworks</groupId>
+            <artifactId>bambou</artifactId>
+            <version>2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.nuagenetworks</groupId>
+            <artifactId>vspk</artifactId>
+            <version>4.0</version>
+        </dependency>
 
-	<build>	   
-	   <plugins>
-	       <plugin>
-	           <groupId>org.apache.maven.plugins</groupId>
-			   <artifactId>maven-install-plugin</artifactId>
-			   <version>2.5.2</version>
-			   
-			   <executions>
-			      <execution>
-			         <id>install-jar-lib</id>
-			         <goals>
-			            <goal>install-file</goal>
-			         </goals>
-			         <phase>initialize</phase>
-			         <configuration>
-		                  <groupId>net.nuagenetworks</groupId>
-		                  <artifactId>bambou</artifactId>
-		                  <version>2.0.0</version>
-		                  <packaging>jar</packaging>
-		                  <file>${basedir}/dependencies/bambou-2.0.0.jar</file>
-		                  <generatePom>true</generatePom>
-		             </configuration>
-			      </execution>
-			      <execution>
-                     <id>install-jar-lib2</id>
-                     <goals>
-                        <goal>install-file</goal>
-                     </goals>
-                     <phase>initialize</phase>
-                     <configuration>
-		                  <groupId>net.nuagenetworks</groupId>
-		                  <artifactId>vspk</artifactId>
-		                  <version>4.0</version>
-		                  <packaging>jar</packaging>
-		                  <file>${basedir}/dependencies/vspk-4.0.jar</file>
-		                  <generatePom>true</generatePom>
-		              </configuration>
-                  </execution>
-			   </executions>
-	       </plugin>
-	       
-		   <plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
-				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
-				</configuration>
-			</plugin>
-			
-			<plugin>
-			             <artifactId>maven-jar-plugin</artifactId>
-			             <version>2.5</version>
-			             <configuration>
-			                 <finalName>NuageSdnControllerPlugin</finalName>
-			                 <archive>
-			                     <manifestEntries>
-			                         <Build-Time>${maven.build.timestamp}</Build-Time>
-			                         <Implementation-Build>${buildNumber}</Implementation-Build>
-			                         <Implementation-Version>${productVersion}</Implementation-Version>
-			                     </manifestEntries>
-			                 </archive>
-			             </configuration>
-			         </plugin>			
-			
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-shade-plugin</artifactId>
-				<version>2.4.3</version>
-				<configuration>				    
-				</configuration>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>shade</goal>
-						</goals>
-						<configuration>
-							<finalName>NuageSdnControllerPlugin</finalName>
-							<artifactSet>
-								<excludes>
-									<!-- <exclude>org.osc.core:IscSdnControllerPlugin</exclude> -->
-									<exclude>junit:junit</exclude>
-									<exclude>com.sun.jersey:jersey-bundle</exclude>
-								</excludes>
-							</artifactSet>
-							<transformers>
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-									<manifestEntries>
-										<Build-Time>${maven.build.timestamp}</Build-Time>
-									</manifestEntries>
-								</transformer>
-							</transformers>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			
-			
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>1.7</version>
-				<executions>
-					<execution>
-						<phase>package</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<tasks>
-								<copy file="${basedir}/NuageSdnControllerPlugin.json" tofile="${project.build.directory}/meta.json" />
-								<!-- Create plugin zip -->							
-								<zip destfile="${project.build.directory}/NuageSdnControllerPlugin.zip">
-									<fileset file="${project.build.directory}/meta.json" />
-									<fileset file="${project.build.directory}/NuageSdnControllerPlugin.jar" />
-								</zip>
-							</tasks>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			
-			
-		</plugins>
-	</build>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.18</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>4.2.5.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.10</version>
+        </dependency>
+
+
+        <!-- remove this later -->
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.framework</artifactId>
+            <version>5.4.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <configuration>
+                    <includeScope>runtime</includeScope>
+                    <outputDirectory>${project.build.directory}/plugin</outputDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.5</version>
+                <configuration>
+                    <finalName>NuageSdnControllerPlugin</finalName>
+                    <outputDirectory>${project.build.directory}/plugin</outputDirectory>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Implementation-Build>${buildNumber}</Implementation-Build>
+                            <Implementation-Version>${productVersion}</Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-indexer-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>local-index</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>local-index</goal>
+                        </goals>
+                        <configuration>
+                            <inputDir>${project.build.directory}/plugin</inputDir>
+                            <outputFile>${project.build.directory}/plugin/index.xml</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <!-- Create plugin .bar -->
+                                <jar destfile="${project.build.directory}/NuageSdnControllerPlugin.bar">
+                                    <fileset dir="${project.build.directory}/plugin" />
+                                    <manifest>
+                                        <attribute name="Deployment-Name" value="Nuage" />                                      
+                                        <attribute name="Deployment-Type" value="SDN"/>
+                                        <attribute name="Deployment-SymbolicName" value="NuageSdnControllerPlugin" />
+                                        <attribute name="Deployment-Version" value="1.0.0" />
+                                        <attribute name="Require-Bundle" value="NuageSdnControllerPlugin" />
+                                    </manifest>
+                                </jar>
+
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+           <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.12</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                <type>bar</type>
+                                <file>${project.build.directory}/NuageSdnControllerPlugin.bar</file>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+           
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>bnd-process</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+        
+        <plugin>
+                <groupId>org.apache.servicemix.tooling</groupId>
+                <artifactId>depends-maven-plugin</artifactId>
+                <version>1.2</version>
+                <executions>
+                    <execution>
+                        <id>generate-depends-file</id>
+                        <goals>
+                            <goal>generate-depends-file</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <pluginManagement>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e 
+                settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.apache.maven.plugins
+                                        </groupId>
+                                        <artifactId>
+                                            maven-dependency-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [2.10,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>
+                                                copy-dependencies
+                                            </goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.apache.servicemix.tooling
+                                        </groupId>
+                                        <artifactId>
+                                            depends-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [1.2,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>
+                                                generate-depends-file
+                                            </goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <execute></execute>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
