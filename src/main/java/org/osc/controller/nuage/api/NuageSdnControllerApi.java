@@ -3,8 +3,6 @@ package org.osc.controller.nuage.api;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.lang.NotImplementedException;
-import org.apache.log4j.Logger;
 import org.osc.sdk.controller.FailurePolicyType;
 import org.osc.sdk.controller.FlowInfo;
 import org.osc.sdk.controller.FlowPortInfo;
@@ -16,9 +14,11 @@ import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osc.sdk.controller.exception.NetworkPortNotFoundException;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.ServiceScope;
 
+@Component(scope=ServiceScope.PROTOTYPE, property="osc.plugin.name=Nuage")
 public class NuageSdnControllerApi implements SdnControllerApi {
-    private static final Logger log = Logger.getLogger(NuageSdnControllerApi.class);
 
     private VirtualizationConnectorElement vc;
     @SuppressWarnings("unused")
@@ -34,12 +34,12 @@ public class NuageSdnControllerApi implements SdnControllerApi {
 
     @Override
     public void close() throws Exception {
+
     }
 
     @Override
     public Status getStatus() throws Exception {
         Status status = null;
-
         try(NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc); ) {
             nuageSecApi.test();
         }
@@ -51,6 +51,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
             throws NetworkPortNotFoundException, Exception {
+
     }
 
     @Override
@@ -103,11 +104,6 @@ public class NuageSdnControllerApi implements SdnControllerApi {
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
             throws NetworkPortNotFoundException, Exception {
 
-    }
-
-    @Override
-    public void registerInspectionPort(InspectionPortElement inspectionPort)
-            throws NetworkPortNotFoundException, Exception {
     }
 
     @Override
@@ -175,16 +171,11 @@ public class NuageSdnControllerApi implements SdnControllerApi {
 
     @Override
     public HashMap<String, FlowPortInfo> queryPortInfo(HashMap<String, FlowInfo> portsQuery) throws Exception {
-        throw new NotImplementedException("Nuage SDN Controller does not support flow based query");
+        throw new UnsupportedOperationException("Nuage SDN Controller does not support flow based query");
     }
 
     @Override
     public NetworkElement registerNetworkElement(List<NetworkElement> elements) throws Exception {
-        return null;
-    }
-
-    @Override
-    public NetworkElement updateNetworkElement(NetworkElement policyGroup, List<NetworkElement> protectedPorts) throws Exception {
         return null;
     }
 
@@ -198,7 +189,18 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     }
 
     @Override
-    public boolean isPortGroupSupported() {
+    public NetworkElement updateNetworkElement(NetworkElement policyGroup, List<NetworkElement> childElements)
+            throws Exception {
+        return null;
+    }
+
+    @Override
+    public void registerInspectionPort(InspectionPortElement inspectionPort)
+            throws NetworkPortNotFoundException, Exception {
+    }
+
+    @Override
+    public  boolean isPortGroupSupported() {
         return true;
     }
 
