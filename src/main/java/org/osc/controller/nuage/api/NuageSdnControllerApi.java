@@ -16,6 +16,7 @@ import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osc.sdk.controller.exception.NetworkPortNotFoundException;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
+import org.springframework.util.CollectionUtils;
 
 @Component(scope=ServiceScope.PROTOTYPE, property="osc.plugin.name=Nuage")
 public class NuageSdnControllerApi implements SdnControllerApi {
@@ -51,12 +52,17 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
             throws NetworkPortNotFoundException, Exception {
-
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
+        }
     }
 
     @Override
     public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws Exception {
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            nuageSecApi.removeInspectionHook(policyGroup, inspectionPort);
+        }
     }
 
     @Override
@@ -109,6 +115,13 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public InspectionPortElement getInspectionPort(InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
+        String domainId = null;
+        if (inspectionPort !=null && inspectionPort.getIngressPort() !=null){
+            domainId = inspectionPort.getIngressPort().getParentId();
+            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+                return nuageSecApi.getRedirectionTarget(inspectionPort, domainId);
+            }
+        }
         return null;
     }
 
@@ -176,11 +189,19 @@ public class NuageSdnControllerApi implements SdnControllerApi {
 
     @Override
     public NetworkElement registerNetworkElement(List<NetworkElement> elements) throws Exception {
-        return null;
+        String domainId = CollectionUtils.isEmpty(elements) ? null : elements.get(0).getParentId();
+        NetworkElement policyGroup = null;
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            policyGroup = nuageSecApi.createPolicyGroup(elements, domainId);
+        }
+        return policyGroup;
     }
 
     @Override
     public void deleteNetworkElement(NetworkElement policyGroup) throws Exception {
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            nuageSecApi.deletePolicyGroup(policyGroup );
+        }
     }
 
     @Override
@@ -189,14 +210,24 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     }
 
     @Override
-    public NetworkElement updateNetworkElement(NetworkElement policyGroup, List<NetworkElement> childElements)
+    public NetworkElement updateNetworkElement(NetworkElement policyGroup, List<NetworkElement> protectedPorts)
             throws Exception {
-        return null;
+        String domainId = CollectionUtils.isEmpty(protectedPorts) ? null : protectedPorts.get(0).getParentId();
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            return nuageSecApi.updatePolicyGroup(policyGroup, protectedPorts, domainId);
+        }
     }
 
     @Override
     public void registerInspectionPort(InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
+        String domainId = null;
+        if (inspectionPort !=null && inspectionPort.getIngressPort() !=null){
+            domainId = inspectionPort.getIngressPort().getParentId();
+            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+                nuageSecApi.createRedirectionTarget(inspectionPort, domainId);
+            }
+        }
     }
 
     @Override
