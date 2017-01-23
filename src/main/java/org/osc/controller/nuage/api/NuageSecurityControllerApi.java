@@ -31,7 +31,6 @@ import net.nuagenetworks.vspk.v4_0.RedirectionTarget;
 import net.nuagenetworks.vspk.v4_0.RedirectionTarget.EndPointType;
 import net.nuagenetworks.vspk.v4_0.VPort;
 import net.nuagenetworks.vspk.v4_0.VPort.AddressSpoofing;
-import net.nuagenetworks.vspk.v4_0.VSDSession;
 import net.nuagenetworks.vspk.v4_0.fetchers.DomainsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdEntryTemplatesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdTemplatesFetcher;
@@ -48,7 +47,7 @@ public class NuageSecurityControllerApi implements Closeable {
     }
 
     public void test() throws Exception {
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
         Enterprise enterprise = me.getEnterprises().getFirst();
@@ -56,7 +55,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     public NetworkElement createPolicyGroup(List<NetworkElement> elements, String domainId) throws RestException{
         DefaultNetworkPort portGroup = new DefaultNetworkPort();
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
         Enterprise enterprise = me.getEnterprises().getFirst();
@@ -89,7 +88,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     public NetworkElement updatePolicyGroup(NetworkElement policyGroup, List<NetworkElement> protectedPorts,
             String domainId) throws RestException{
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
 
         PolicyGroup polGrp = null;
@@ -109,7 +108,7 @@ public class NuageSecurityControllerApi implements Closeable {
     }
 
     public void deletePolicyGroup(NetworkElement policyGroup) throws RestException{
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
 
         PolicyGroup pg = null;
@@ -185,7 +184,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     public void createRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
 
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
 
@@ -249,7 +248,7 @@ public class NuageSecurityControllerApi implements Closeable {
     }
 
     public InspectionPortElement getRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
         Enterprise enterprise = me.getEnterprises().getFirst();
@@ -296,7 +295,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws RestException, IOException, Exception {
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
 
         PolicyGroup fetchPG = new PolicyGroup();
@@ -391,7 +390,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws RestException, IOException, Exception {
-        VSDSession session = this.nuageRestApi.getVsdSession();
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         PolicyGroup fetchPG = new PolicyGroup();
         fetchPG.setId(policyGroup.getElementId());
