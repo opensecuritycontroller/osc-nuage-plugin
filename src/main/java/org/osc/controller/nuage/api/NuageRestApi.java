@@ -3,14 +3,12 @@ package org.osc.controller.nuage.api;
 import org.apache.log4j.Logger;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 
-import net.nuagenetworks.vspk.v4_0.VSDSession;
-
 public class NuageRestApi implements AutoCloseable {
 
     private Logger log = Logger.getLogger(NuageRestApi.class);
     private final int PORT = 8443;
     protected VirtualizationConnectorElement vc;
-    private VSDSession vsdSession ;
+    private OSCVSDSession vsdSession ;
 
     public static final String EMPTY_JSON = "{ }";
 
@@ -20,18 +18,23 @@ public class NuageRestApi implements AutoCloseable {
     public NuageRestApi(VirtualizationConnectorElement vc) throws Exception {
         this.vc = vc;
         //Fix CCL issue ClassUtils.class in Spring
-        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-        this.vsdSession = getNuageVSDSession();
+        ClassLoader oldCCL = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+            this.vsdSession = getNuageVSDSession();
+        } finally {
+            Thread.currentThread().setContextClassLoader(oldCCL);
+        }
     }
 
     public VirtualizationConnectorElement getVc() {
         return this.vc;
     }
 
-    public VSDSession getNuageVSDSession(){
+    public OSCVSDSession getNuageVSDSession(){
         String urlPrefix = "https"  + "://" + this.vc.getControllerIpAddress()
         + (this.PORT > 0 ? ":" + this.PORT : "");
-        setVsdSession(new VSDSession(this.vc.getControllerUsername(),
+        setVsdSession(new OSCVSDSession(this.vc.getControllerUsername(),
                 this.vc.getControllerPassword(), "csp", urlPrefix ));
         return this.vsdSession;
     }
@@ -40,11 +43,11 @@ public class NuageRestApi implements AutoCloseable {
     public void close() {
     }
 
-    public VSDSession getVsdSession() {
+    public OSCVSDSession getVsdSession() {
         return this.vsdSession;
     }
 
-    public VSDSession setVsdSession(VSDSession vsdSession) {
+    public OSCVSDSession setVsdSession(OSCVSDSession vsdSession) {
         this.vsdSession = vsdSession;
         return vsdSession;
     }
