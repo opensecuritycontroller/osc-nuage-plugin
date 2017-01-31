@@ -22,8 +22,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.osc.core</groupId>
-            <artifactId>IscSdnControllerPlugin</artifactId>
+            <groupId>org.osc.api</groupId>
+            <artifactId>sdn-controller-api</artifactId>
             <version>1.0</version>
             <scope>provided</scope>
         </dependency>

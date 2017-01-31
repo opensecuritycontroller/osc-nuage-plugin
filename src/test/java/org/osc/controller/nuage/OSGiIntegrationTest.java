@@ -2,15 +2,14 @@ package org.osc.controller.nuage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
-import static org.ops4j.pax.exam.CoreOptions.bundle;
-import static org.ops4j.pax.exam.CoreOptions.junitBundles;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -156,6 +155,16 @@ public class OSGiIntegrationTest {
             @Override
             public String getControllerIpAddress() {
                 return "127.0.0.1";
+            }
+
+            @Override
+            public SSLContext getSslContext() {
+                return null;
+            }
+
+            @Override
+            public TrustManager[] getTruststoreManager() throws Exception {
+                return null;
             }
         });
 
