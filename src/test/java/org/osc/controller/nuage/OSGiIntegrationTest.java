@@ -2,8 +2,12 @@ package org.osc.controller.nuage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
-import static org.ops4j.pax.exam.CoreOptions.*;
+import static org.ops4j.pax.exam.CoreOptions.bundle;
+import static org.ops4j.pax.exam.CoreOptions.junitBundles;
+import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
+import static org.ops4j.pax.exam.CoreOptions.options;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,18 +48,41 @@ public class OSGiIntegrationTest {
                 // And some dependencies
                 mavenBundle("org.apache.felix", "org.apache.felix.scr").versionAsInProject(),
 
-                mavenBundle("org.osc.core", "IscSdnControllerPlugin").versionAsInProject(),
+                mavenBundle("log4j", "log4j").versionAsInProject(),
+                mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
+                mavenBundle("commons-codec", "commons-codec").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
+                mavenBundle("org.osc.api", "sdn-controller-api").versionAsInProject(),
                 mavenBundle("org.apache.jclouds", "jclouds-core").versionAsInProject(),
                 mavenBundle("org.apache.jclouds.labs", "openstack-neutron").versionAsInProject(),
                 mavenBundle("org.apache.jclouds.api", "openstack-keystone").versionAsInProject(),
+
+
+                mavenBundle("org.glassfish.jersey.bundles.repackaged", "jersey-guava").versionAsInProject(),
+                mavenBundle("org.glassfish.hk2", "hk2-api").versionAsInProject(),
+                mavenBundle("org.glassfish.hk2", "hk2-utils").versionAsInProject(),
+                mavenBundle("org.glassfish.hk2", "osgi-resource-locator").versionAsInProject(),
+                mavenBundle("org.glassfish.hk2.external", "aopalliance-repackaged").versionAsInProject(),
+                mavenBundle("org.apache.servicemix.bundles", "org.apache.servicemix.bundles.aopalliance").versionAsInProject(),
+
+
+                mavenBundle("com.fasterxml.jackson.core", "jackson-core").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.core", "jackson-databind").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-json-provider").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-base").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.module", "jackson-module-jaxb-annotations").versionAsInProject(),
+
+
+               // mavenBundle("com.fasterxml.jackson.dataformat", "jackson-dataformat-xml").versionAsInProject(),
+
+
                 mavenBundle("com.google.code.gson", "gson").versionAsInProject(),
                 mavenBundle("com.google.guava", "guava").versionAsInProject(),
                 mavenBundle("com.google.inject", "guice").versionAsInProject(),
                 mavenBundle("com.google.inject.extensions", "guice-multibindings").versionAsInProject().noStart(),
                 mavenBundle("com.google.inject.extensions", "guice-assistedinject").versionAsInProject().noStart(),
-                mavenBundle("org.apache.servicemix.bundles", "org.apache.servicemix.bundles.aopalliance").versionAsInProject(),
-                mavenBundle("log4j", "log4j").versionAsInProject(),
-                mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
+
+
                 mavenBundle("javax.ws.rs", "jsr311-api").versionAsInProject(),
 
                 // Uncomment this line to allow remote debugging
@@ -159,6 +186,11 @@ public class OSGiIntegrationTest {
 
             @Override
             public SSLContext getSslContext() {
+                try {
+                    return SSLContext.getDefault();
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
                 return null;
             }
 
