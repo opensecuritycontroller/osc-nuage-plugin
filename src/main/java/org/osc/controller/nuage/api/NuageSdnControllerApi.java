@@ -1,5 +1,13 @@
 package org.osc.controller.nuage.api;
 
+import static org.osc.sdk.controller.Constants.PLUGIN_NAME;
+import static org.osc.sdk.controller.Constants.QUERY_PORT_INFO;
+import static org.osc.sdk.controller.Constants.SUPPORT_FAILURE_POLICY;
+import static org.osc.sdk.controller.Constants.SUPPORT_OFFBOX_REDIRECTION;
+import static org.osc.sdk.controller.Constants.SUPPORT_PORT_GROUP;
+import static org.osc.sdk.controller.Constants.SUPPORT_SFC;
+import static org.osc.sdk.controller.Constants.USE_PROVIDER_CREDS;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -18,7 +26,15 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
 import org.springframework.util.CollectionUtils;
 
-@Component(scope=ServiceScope.PROTOTYPE, property="osc.plugin.name=Nuage")
+@Component(scope=ServiceScope.PROTOTYPE,
+property={
+        PLUGIN_NAME + "=Nuage",
+        SUPPORT_OFFBOX_REDIRECTION + ":Boolean=true",
+        SUPPORT_SFC + ":Boolean=false",
+        SUPPORT_FAILURE_POLICY + ":Boolean=false",
+        USE_PROVIDER_CREDS + ":Boolean=false",
+        QUERY_PORT_INFO + ":Boolean=false",
+        SUPPORT_PORT_GROUP + ":Boolean=true"})
 public class NuageSdnControllerApi implements SdnControllerApi {
 
     private VirtualizationConnectorElement vc;
@@ -44,7 +60,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
         try(NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc); ) {
             nuageSecApi.test();
         }
-        status = new Status(getName(), getVersion(), true);
+        status = new Status("Nuage", "0.1", true);
         return status;
     }
 
@@ -137,16 +153,6 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     }
 
     @Override
-    public String getName() {
-        return "Nuage";
-    }
-
-    @Override
-    public String getVersion() {
-        return "0.1";
-    }
-
-    @Override
     public void setVirtualizationConnector(VirtualizationConnectorElement vc) {
         this.vc = vc;
 
@@ -155,31 +161,6 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public void setRegion(String region) {
         this.region = region;
-    }
-
-    @Override
-    public boolean isOffboxRedirectionSupported() {
-        return true;
-    }
-
-    @Override
-    public boolean isServiceFunctionChainingSupported() {
-        return false;
-    }
-
-    @Override
-    public boolean isFailurePolicySupported() {
-        return false;
-    }
-
-    @Override
-    public boolean isUsingProviderCreds() {
-        return false;
-    }
-
-    @Override
-    public boolean isSupportQueryPortInfo() {
-        return false;
     }
 
     @Override
@@ -228,11 +209,6 @@ public class NuageSdnControllerApi implements SdnControllerApi {
                 nuageSecApi.createRedirectionTarget(inspectionPort, domainId);
             }
         }
-    }
-
-    @Override
-    public  boolean isPortGroupSupported() {
-        return true;
     }
 
 }
