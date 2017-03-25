@@ -162,9 +162,7 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
 
         SdnControllerApi object = so.getService();
 
-        object.setRegion("foo");
-
-        object.setVirtualizationConnector(new VirtualizationConnectorElement() {
+        object.getStatus(new VirtualizationConnectorElement() {
 
             @Override
             public boolean isProviderHttps() {
@@ -235,8 +233,6 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
             public TrustManager[] getTruststoreManager() throws Exception {
                 return null;
             }
-        });
-
-        object.getStatus();
+        }, "foo");
     }
 }
