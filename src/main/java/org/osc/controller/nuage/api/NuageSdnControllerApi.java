@@ -1,12 +1,6 @@
 package org.osc.controller.nuage.api;
 
-import static org.osc.sdk.controller.Constants.PLUGIN_NAME;
-import static org.osc.sdk.controller.Constants.QUERY_PORT_INFO;
-import static org.osc.sdk.controller.Constants.SUPPORT_FAILURE_POLICY;
-import static org.osc.sdk.controller.Constants.SUPPORT_OFFBOX_REDIRECTION;
-import static org.osc.sdk.controller.Constants.SUPPORT_PORT_GROUP;
-import static org.osc.sdk.controller.Constants.SUPPORT_SFC;
-import static org.osc.sdk.controller.Constants.USE_PROVIDER_CREDS;
+import static org.osc.sdk.controller.Constants.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,11 +16,15 @@ import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osc.sdk.controller.exception.NetworkPortNotFoundException;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.springframework.util.CollectionUtils;
 
 @Component(scope=ServiceScope.PROTOTYPE,
+configurationPid="org.osc.controller.nuage.SdnController",
 property={
         PLUGIN_NAME + "=Nuage",
         SUPPORT_OFFBOX_REDIRECTION + ":Boolean=true",
@@ -36,10 +34,23 @@ property={
         QUERY_PORT_INFO + ":Boolean=false",
         SUPPORT_PORT_GROUP + ":Boolean=true"})
 public class NuageSdnControllerApi implements SdnControllerApi {
-
     private VirtualizationConnectorElement vc;
+    private Config config;
+
     @SuppressWarnings("unused")
     private String region;
+
+    @ObjectClassDefinition
+    @interface Config {
+        @AttributeDefinition(
+                min="0",
+                max="65535",
+                required=false,
+                description="The port to use when connecting to Nuage instances. "
+                        + "The value '0' indicates that a default port of '443' (or '80' if HTTPS is not enabled) should be used."
+                        + "If not provided the default value of the port will be '8443' for Nuage environments.")
+        int port() default 8443;
+    }
 
     public NuageSdnControllerApi() {
     }
@@ -49,15 +60,19 @@ public class NuageSdnControllerApi implements SdnControllerApi {
         this.region = region;
     }
 
+    @Activate
+    void start(Config config) {
+        this.config = config;
+    }
+
     @Override
     public void close() throws Exception {
-
     }
 
     @Override
     public Status getStatus() throws Exception {
         Status status = null;
-        try(NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc); ) {
+        try(NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port()); ) {
             nuageSecApi.test();
         }
         status = new Status("Nuage", "0.1", true);
@@ -67,8 +82,8 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
-            throws NetworkPortNotFoundException, Exception {
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+                    throws NetworkPortNotFoundException, Exception {
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
         }
     }
@@ -76,7 +91,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws Exception {
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             nuageSecApi.removeInspectionHook(policyGroup, inspectionPort);
         }
     }
@@ -124,7 +139,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public void updateInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
-            throws NetworkPortNotFoundException, Exception {
+                    throws NetworkPortNotFoundException, Exception {
 
     }
 
@@ -134,7 +149,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
         String domainId = null;
         if (inspectionPort !=null && inspectionPort.getIngressPort() !=null){
             domainId = inspectionPort.getIngressPort().getParentId();
-            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
                 return nuageSecApi.getRedirectionTarget(inspectionPort, domainId);
             }
         }
@@ -172,7 +187,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     public NetworkElement registerNetworkElement(List<NetworkElement> elements) throws Exception {
         String domainId = CollectionUtils.isEmpty(elements) ? null : elements.get(0).getParentId();
         NetworkElement policyGroup = null;
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             policyGroup = nuageSecApi.createPolicyGroup(elements, domainId);
         }
         return policyGroup;
@@ -180,7 +195,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
 
     @Override
     public void deleteNetworkElement(NetworkElement policyGroup) throws Exception {
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             nuageSecApi.deletePolicyGroup(policyGroup );
         }
     }
@@ -194,7 +209,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     public NetworkElement updateNetworkElement(NetworkElement policyGroup, List<NetworkElement> protectedPorts)
             throws Exception {
         String domainId = CollectionUtils.isEmpty(protectedPorts) ? null : protectedPorts.get(0).getParentId();
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             return nuageSecApi.updatePolicyGroup(policyGroup, protectedPorts, domainId);
         }
     }
@@ -205,7 +220,7 @@ public class NuageSdnControllerApi implements SdnControllerApi {
         String domainId = null;
         if (inspectionPort !=null && inspectionPort.getIngressPort() !=null){
             domainId = inspectionPort.getIngressPort().getParentId();
-            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc)){
+            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
                 nuageSecApi.createRedirectionTarget(inspectionPort, domainId);
             }
         }

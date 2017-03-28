@@ -42,15 +42,15 @@ public class NuageSecurityControllerApi implements Closeable {
 
     private NuageRestApi nuageRestApi = null;
 
-    public NuageSecurityControllerApi(VirtualizationConnectorElement vc) throws Exception {
-         this.nuageRestApi = new NuageRestApi(vc);
+    public NuageSecurityControllerApi(VirtualizationConnectorElement vc, int port) throws Exception {
+        this.nuageRestApi = new NuageRestApi(vc, port);
     }
 
     public void test() throws Exception {
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
-        Enterprise enterprise = me.getEnterprises().getFirst();
+        me.getEnterprises().getFirst();
     }
 
     public NetworkElement createPolicyGroup(List<NetworkElement> elements, String domainId) throws RestException{
@@ -287,7 +287,7 @@ public class NuageSecurityControllerApi implements Closeable {
             RedirectionTargetsFetcher rtFetch = vports.get(0).getRedirectionTargets();
             RedirectionTarget rt = rtFetch.getFirst();
             if (rt != null){
-               return true;
+                return true;
             }
         }
         return false;
@@ -319,7 +319,7 @@ public class NuageSecurityControllerApi implements Closeable {
 
     private void createFwdPolicyIngressEgressEntries(PolicyGroup policyGrp, IngressAdvFwdTemplate fwdPolicy,
             InspectionPortElement inspectionPort, Domain selectDomain )
-            throws RestException
+                    throws RestException
     {
         RedirectionTarget rtIngress = null, rtEgress = null;
         if (fwdPolicy != null){

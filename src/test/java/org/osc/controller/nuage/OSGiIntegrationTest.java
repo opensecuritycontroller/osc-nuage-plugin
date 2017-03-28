@@ -2,13 +2,13 @@ package org.osc.controller.nuage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
-import static org.ops4j.pax.exam.CoreOptions.bundle;
-import static org.ops4j.pax.exam.CoreOptions.junitBundles;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.*;
 
+import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -27,11 +27,16 @@ import org.osc.sdk.controller.api.SdnControllerApi;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceObjects;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.util.tracker.ServiceTracker;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerMethod.class)
-public class OSGiIntegrationTest {
+public class OSGiIntegrationTest extends AbstractNuageTest {
+    @Inject
+    ConfigurationAdmin configAdmin;
 
     @Inject
     BundleContext context;
@@ -49,14 +54,11 @@ public class OSGiIntegrationTest {
                 mavenBundle("org.apache.felix", "org.apache.felix.scr").versionAsInProject(),
 
                 mavenBundle("log4j", "log4j").versionAsInProject(),
+                mavenBundle("commons-logging", "commons-logging").versionAsInProject(),
                 mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
                 mavenBundle("commons-codec", "commons-codec").versionAsInProject(),
                 mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
                 mavenBundle("org.osc.api", "sdn-controller-api").versionAsInProject(),
-                mavenBundle("org.apache.jclouds", "jclouds-core").versionAsInProject(),
-                mavenBundle("org.apache.jclouds.labs", "openstack-neutron").versionAsInProject(),
-                mavenBundle("org.apache.jclouds.api", "openstack-keystone").versionAsInProject(),
-
 
                 mavenBundle("org.glassfish.jersey.bundles.repackaged", "jersey-guava").versionAsInProject(),
                 mavenBundle("org.glassfish.hk2", "hk2-api").versionAsInProject(),
@@ -72,29 +74,64 @@ public class OSGiIntegrationTest {
                 mavenBundle("com.fasterxml.jackson.jaxrs", "jackson-jaxrs-base").versionAsInProject(),
                 mavenBundle("com.fasterxml.jackson.module", "jackson-module-jaxb-annotations").versionAsInProject(),
 
-
-               // mavenBundle("com.fasterxml.jackson.dataformat", "jackson-dataformat-xml").versionAsInProject(),
-
+                mavenBundle("org.codehaus.woodstox", "stax2-api").versionAsInProject(),
+                mavenBundle("com.fasterxml.jackson.dataformat", "jackson-dataformat-xml").versionAsInProject(),
 
                 mavenBundle("com.google.code.gson", "gson").versionAsInProject(),
                 mavenBundle("com.google.guava", "guava").versionAsInProject(),
-                mavenBundle("com.google.inject", "guice").versionAsInProject(),
-                mavenBundle("com.google.inject.extensions", "guice-multibindings").versionAsInProject().noStart(),
-                mavenBundle("com.google.inject.extensions", "guice-assistedinject").versionAsInProject().noStart(),
+                mavenBundle("javax.ws.rs", "javax.ws.rs-api").versionAsInProject(),
 
+                // Just needed for the test so we can configure the client to point at the local test server
+                mavenBundle("org.apache.felix", "org.apache.felix.configadmin", "1.8.10"),
 
-                mavenBundle("javax.ws.rs", "jsr311-api").versionAsInProject(),
+                // Needed for testing and the test server
+                mavenBundle("org.glassfish.jersey.core", "jersey-server").versionAsInProject(),
+                mavenBundle("org.glassfish.jersey.core", "jersey-common").versionAsInProject(),
+                mavenBundle("org.glassfish.jersey.core", "jersey-client").versionAsInProject(),
+                mavenBundle("javax.servlet", "javax.servlet-api").versionAsInProject(),
+                mavenBundle("javax.annotation", "javax.annotation-api").versionAsInProject(),
+                mavenBundle("javax.validation", "validation-api").versionAsInProject(),
+                mavenBundle("org.glassfish.hk2", "hk2-locator").versionAsInProject(),
+                mavenBundle("org.javassist", "javassist").versionAsInProject(),
+                mavenBundle("org.glassfish.jersey.containers", "jersey-container-jetty-http").versionAsInProject(),
+                mavenBundle("org.eclipse.jetty", "jetty-http").versionAsInProject(),
+                mavenBundle("org.eclipse.jetty", "jetty-server").versionAsInProject(),
+                mavenBundle("org.eclipse.jetty", "jetty-util").versionAsInProject(),
+                mavenBundle("org.eclipse.jetty", "jetty-io").versionAsInProject(),
+                mavenBundle("org.eclipse.jetty", "jetty-continuation").versionAsInProject(),
 
                 // Uncomment this line to allow remote debugging
                 // CoreOptions.vmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1044"),
 
                 junitBundles()
-            );
+                );
     }
 
     @Before
-    public void setup() {
+    public void setup() throws IOException {
         this.tracker = new ServiceTracker<>(this.context, SdnControllerApi.class, null);
+        this.tracker.open();
+
+        Configuration configuration = this.configAdmin.getConfiguration("org.osc.controller.nuage.SdnController", "?");
+
+        Dictionary<String, Object> config = new Hashtable<>();
+        config.put("port", this.serverPort);
+        config.put("testing", true);
+
+        configuration.update(config);
+
+        // Set up a tracker which only picks up "testing" services
+        this.tracker = new ServiceTracker<SdnControllerApi, SdnControllerApi>(this.context,
+                SdnControllerApi.class, null) {
+            @Override
+            public SdnControllerApi addingService(ServiceReference<SdnControllerApi> ref) {
+                if(Boolean.TRUE.equals(ref.getProperty("testing"))) {
+                    return this.context.getService(ref);
+                }
+                return null;
+            }
+        };
+
         this.tracker.open();
     }
 
@@ -116,7 +153,7 @@ public class OSGiIntegrationTest {
      * we could start a simple local server to connect to...
      * @throws Exception
      */
-    //@Test(expected=org.jclouds.http.HttpResponseException.class)
+    @Test
     public void testConnect() throws Exception {
         SdnControllerApi service = this.tracker.waitForService(5000);
         assertNotNull(service);
