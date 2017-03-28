@@ -1,27 +1,23 @@
 package org.osc.controller.nuage.api;
 
-import org.apache.log4j.Logger;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 
 public class NuageRestApi implements AutoCloseable {
-
-    private Logger log = Logger.getLogger(NuageRestApi.class);
-    private final int PORT = 8443;
+    private final int port;
     protected VirtualizationConnectorElement vc;
     private OSCVSDSession vsdSession ;
 
     public static final String EMPTY_JSON = "{ }";
 
-    public NuageRestApi(){
-    }
-
-    public NuageRestApi(VirtualizationConnectorElement vc) throws Exception {
+    public NuageRestApi(VirtualizationConnectorElement vc, int port) throws Exception {
         this.vc = vc;
+        this.port = port;
+
         //Fix CCL issue ClassUtils.class in Spring
         ClassLoader oldCCL = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-            this.vsdSession = getNuageVSDSession();
+            this.vsdSession = getNuageVSDSession(vc.isControllerHttps());
         } finally {
             Thread.currentThread().setContextClassLoader(oldCCL);
         }
@@ -31,9 +27,9 @@ public class NuageRestApi implements AutoCloseable {
         return this.vc;
     }
 
-    public OSCVSDSession getNuageVSDSession(){
-        String urlPrefix = "https"  + "://" + this.vc.getControllerIpAddress()
-        + (this.PORT > 0 ? ":" + this.PORT : "");
+    public OSCVSDSession getNuageVSDSession(boolean isHttps){
+        String urlPrefix = (isHttps ? "https"  : "http") + "://" + this.vc.getControllerIpAddress()
+        + ":" + this.port;
         setVsdSession(new OSCVSDSession(this.vc.getControllerUsername(),
                 this.vc.getControllerPassword(), "csp", urlPrefix ));
         return this.vsdSession;
