@@ -80,12 +80,14 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     }
 
     @Override
-    public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
+    public String installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
                     throws NetworkPortNotFoundException, Exception {
         try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
         }
+
+        return null;
     }
 
     @Override
