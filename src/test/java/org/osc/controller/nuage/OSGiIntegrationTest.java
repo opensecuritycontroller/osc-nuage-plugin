@@ -1,7 +1,7 @@
 package org.osc.controller.nuage;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.ops4j.pax.exam.CoreOptions.*;
 
 import java.io.IOException;
@@ -145,7 +145,7 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
         SdnControllerApi objectA = so.getService();
         SdnControllerApi objectB = so.getService();
 
-        assertNotSame(objectA, objectB);
+        assertSame(objectA, objectB);
     }
 
     /**

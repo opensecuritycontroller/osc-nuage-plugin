@@ -16,7 +16,7 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 
 @Component(
-        configurationPid = "com.nuage.SdnController",
+        configurationPid = "org.osc.controller.nuage.SdnController",
         property = {
                 PLUGIN_NAME + "=Nuage",
                 SUPPORT_OFFBOX_REDIRECTION + ":Boolean=true",
