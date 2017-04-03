@@ -160,6 +160,13 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
         }
     }
 
+    public void removeInspectionPort(NetworkElement policyGroup, InspectionPortElement inspectionPort)
+            throws NetworkPortNotFoundException, Exception {
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())) {
+            nuageSecApi.deleteInspectionPort(policyGroup, inspectionPort);
+        }
+    }
+
     @Override
     public void close() throws Exception {
 
