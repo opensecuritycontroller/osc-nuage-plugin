@@ -2,6 +2,7 @@ package org.osc.controller.nuage.api;
 
 import java.util.List;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.osc.controller.nuage.api.NuageSdnControllerApi.Config;
 import org.osc.sdk.controller.FailurePolicyType;
 import org.osc.sdk.controller.TagEncapsulationType;
@@ -32,23 +33,19 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
                     throws NetworkPortNotFoundException, Exception {
         try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
-            nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
+            return nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
         }
-
-        return null;
     }
 
     @Override
     public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws Exception {
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())) {
-            nuageSecApi.removeInspectionHook(policyGroup, inspectionPort);
-        }
+        throw new NotImplementedException("This method is not expected to be called for Nuage. "
+                + "It is only applicable for SDN controller that do not support port goru");
     }
 
     @Override
     public void removeAllInspectionHooks(NetworkElement inspectedPort) throws Exception {
-
     }
 
     @Override
@@ -81,15 +78,9 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public void updateInspectionHook(InspectionHookElement inspectionHook)
-            throws NetworkPortNotFoundException, Exception {
-
-    }
-
-    @Override
-    public void updateInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
+    public void updateInspectionHook(String inspectionHookId, NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
-            throws NetworkPortNotFoundException, Exception {
+                    throws NetworkPortNotFoundException, Exception {
 
     }
 
@@ -177,4 +168,10 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
 
     }
 
+    @Override
+    public void removeInspectionHook(String inspectionHookId) throws Exception {
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
+            nuageSecApi.deleteInspectionHook(inspectionHookId);
+        }
+    }
 }

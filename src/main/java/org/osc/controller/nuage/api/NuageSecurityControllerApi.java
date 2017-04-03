@@ -280,7 +280,7 @@ public class NuageSecurityControllerApi implements Closeable {
         return false;
     }
 
-    public void installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
+    public String installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws RestException, IOException, Exception {
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
@@ -288,13 +288,13 @@ public class NuageSecurityControllerApi implements Closeable {
         PolicyGroup fetchPG = new PolicyGroup();
         fetchPG.setId(policyGroup.getElementId());
         fetchPG.fetch();
+        IngressAdvFwdTemplate fwdPolicy = null;
         if (fetchPG != null){
             String selectDomainId = fetchPG.getParentId();
             Domain selectDomain = new Domain();
             selectDomain.setId(selectDomainId);
             selectDomain.fetch();
             beginPolicyChanges(selectDomain);
-            IngressAdvFwdTemplate fwdPolicy = null;
             fwdPolicy = getForwardingPolicy(selectDomain, fetchPG);
             if (fwdPolicy == null){
                 fwdPolicy = createNewForwardingPolicy( selectDomain);
@@ -302,6 +302,19 @@ public class NuageSecurityControllerApi implements Closeable {
             }
             applyPolicyChanges(selectDomain);
         }
+
+        return fwdPolicy.getId();
+    }
+
+    public void deleteInspectionHook(String inspectionHookId)
+            throws RestException, IOException, Exception {
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
+        session.start();
+
+        IngressAdvFwdTemplate fwdPolicy = new IngressAdvFwdTemplate();
+        fwdPolicy.setId(inspectionHookId);
+        fwdPolicy.fetch();
+        fwdPolicy.delete();
     }
 
     private void createFwdPolicyIngressEgressEntries(PolicyGroup policyGrp, IngressAdvFwdTemplate fwdPolicy,
