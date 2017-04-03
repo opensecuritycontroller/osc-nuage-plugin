@@ -411,7 +411,6 @@ public class NuageSecurityControllerApi implements Closeable {
             selectDomain.setId(selectDomainId);
             selectDomain.fetch();
 
-
             String ingrInspectionPortOSId = inspPort.getIngressPort().getElementId(),
                     egrInspectionPortOSId = inspPort.getEgressPort().getElementId();
             if (ingrInspectionPortOSId != null) {
