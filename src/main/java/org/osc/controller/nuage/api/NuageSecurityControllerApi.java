@@ -398,28 +398,23 @@ public class NuageSecurityControllerApi implements Closeable {
         }
     }
 
-    public void deleteInspectionPort(NetworkElement policyGroup, InspectionPortElement inspPort) throws Exception {
+    public void deleteInspectionPort( String selectDomainId, InspectionPortElement inspPort) throws Exception {
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
 
-        PolicyGroup fetchPG = new PolicyGroup();
-        fetchPG.setId(policyGroup.getElementId());
-        fetchPG.fetch();
-        if (fetchPG != null){
-            String selectDomainId = fetchPG.getParentId();
-            Domain selectDomain = new Domain();
-            selectDomain.setId(selectDomainId);
-            selectDomain.fetch();
+        Domain selectDomain = new Domain();
+        selectDomain.setId(selectDomainId);
+        selectDomain.fetch();
 
-            String ingrInspectionPortOSId = inspPort.getIngressPort().getElementId(),
-                    egrInspectionPortOSId = inspPort.getEgressPort().getElementId();
-            if (ingrInspectionPortOSId != null) {
-                handleDeleteRT(selectDomain, ingrInspectionPortOSId);
-            }
-            if (egrInspectionPortOSId != null) {
-                handleDeleteRT(selectDomain, ingrInspectionPortOSId);
-            }
+        String ingrInspectionPortOSId = inspPort.getIngressPort().getElementId(),
+                egrInspectionPortOSId = inspPort.getEgressPort().getElementId();
+        if (ingrInspectionPortOSId != null) {
+            handleDeleteRT(selectDomain, ingrInspectionPortOSId);
         }
+        if (egrInspectionPortOSId != null) {
+            handleDeleteRT(selectDomain, ingrInspectionPortOSId);
+        }
+
     }
 
     private void handleDeleteRT(Domain selectDomain, String ingrInspectionPortOSId) throws RestException {

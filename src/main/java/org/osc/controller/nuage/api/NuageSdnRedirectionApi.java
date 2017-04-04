@@ -160,11 +160,16 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
         }
     }
 
-    public void removeInspectionPort(NetworkElement policyGroup, InspectionPortElement inspectionPort)
+    public void removeInspectionPort( InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
-        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())) {
-            nuageSecApi.deleteInspectionPort(policyGroup, inspectionPort);
+        String domainId = null;
+        if (inspectionPort != null && inspectionPort.getIngressPort() != null) {
+            domainId = inspectionPort.getIngressPort().getParentId();
+            try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())) {
+                nuageSecApi.deleteInspectionPort(domainId, inspectionPort);
+            }
         }
+
     }
 
     @Override
