@@ -303,7 +303,7 @@ public class NuageSecurityControllerApi implements Closeable {
             applyPolicyChanges(selectDomain);
         }
 
-        return fwdPolicy.getId();
+        return fwdPolicy == null ? null : fwdPolicy.getId();
     }
 
     public void deleteInspectionHook(String inspectionHookId)

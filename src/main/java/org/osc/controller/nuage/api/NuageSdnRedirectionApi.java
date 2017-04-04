@@ -41,7 +41,7 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
     public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws Exception {
         throw new NotImplementedException("This method is not expected to be called for Nuage. "
-                + "It is only applicable for SDN controller that do not support port goru");
+                + "It is only applicable for SDN controller that does not support port group");
     }
 
     @Override
@@ -75,13 +75,6 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
     public InspectionHookElement getInspectionHook(NetworkElement inspectedPort, InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
         return null;
-    }
-
-    @Override
-    public void updateInspectionHook(String inspectionHookId, NetworkElement inspectedPort, InspectionPortElement inspectionPort, Long tag,
-            TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
-                    throws NetworkPortNotFoundException, Exception {
-
     }
 
     @Override
@@ -173,5 +166,17 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
         try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
             nuageSecApi.deleteInspectionHook(inspectionHookId);
         }
+    }
+
+    @Override
+    public InspectionHookElement getInspectionHook(String inspectionHookId) throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void updateInspectionHook(InspectionHookElement existingInspectionHook)
+            throws NetworkPortNotFoundException, Exception {
+        throw new NotImplementedException("Updating an inspeciton hook is currently not supported by this plugin");
     }
 }
