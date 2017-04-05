@@ -32,8 +32,8 @@ import net.nuagenetworks.vspk.v4_0.RedirectionTarget.EndPointType;
 import net.nuagenetworks.vspk.v4_0.VPort;
 import net.nuagenetworks.vspk.v4_0.VPort.AddressSpoofing;
 import net.nuagenetworks.vspk.v4_0.fetchers.DomainsFetcher;
-import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdEntryTemplatesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdTemplatesFetcher;
+import net.nuagenetworks.vspk.v4_0.fetchers.PolicyGroupsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.RedirectionTargetsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.VPortsFetcher;
 
@@ -86,25 +86,53 @@ public class NuageSecurityControllerApi implements Closeable {
         return portGroup;
     }
 
+    private void addPolicyGroupPorts(Domain selectDomain, PolicyGroup pg, List<NetworkElement> elements) throws RestException{
+        List<VPort> vports =new ArrayList<>();
+        for (NetworkElement element: elements){
+            List<VPort> temp =new ArrayList<>();
+            //protected VM OS ID
+            String filter = String.format("name like '%s'", element.getElementId());
+            VPortsFetcher vportFet = selectDomain.getVPorts();
+            temp  = vportFet.fetch(filter, null, null, null, null, null, Boolean.FALSE);
+            if (!CollectionUtils.isEmpty(temp)) {
+                vports.add(temp.get(0));
+            }
+        }
+
+        pg.assign(vports);
+    }
+
     public NetworkElement updatePolicyGroup(NetworkElement policyGroup, List<NetworkElement> protectedPorts,
             String domainId) throws RestException{
+
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
+        Me me = session.getMe();
+        Enterprise enterprise = me.getEnterprises().getFirst();
 
-        PolicyGroup polGrp = null;
-        try {
-            polGrp = new PolicyGroup();
-            polGrp.setId(policyGroup.getElementId());
-            polGrp.fetch();
-        } catch (Exception e) {
-            polGrp = null;
+        Domain selectDomain = null;
+        DomainsFetcher fetcher = new DomainsFetcher(enterprise);
+        String filter = String.format("name like '%s'", domainId);
+        List<Domain> dms = fetcher.fetch(filter, null, null, null, null, null, Boolean.FALSE);
+        if (!CollectionUtils.isEmpty(dms)) {
+            selectDomain = dms.get(0);
+            PolicyGroup polGrp = null;
+            try {
+                polGrp = new PolicyGroup();
+                polGrp.setId(policyGroup.getElementId());
+                polGrp.fetch();
+            } catch (Exception e) {
+                polGrp = null;
+            }
+            if (polGrp == null){
+                return createPolicyGroup(protectedPorts, domainId);
+            } else {
+                addPolicyGroupPorts(selectDomain, polGrp, protectedPorts);
+                return policyGroup;
+            }
         }
-        if (polGrp == null){
-            return createPolicyGroup(protectedPorts, domainId);
-        } else {
-            //handle Security Group update add/remove workload VMs
-            return null;
-        }
+
+        return null;
     }
 
     public void deletePolicyGroup(NetworkElement policyGroup) throws RestException {
@@ -121,40 +149,19 @@ public class NuageSecurityControllerApi implements Closeable {
             this.log.debug(format);
             return;
         }
-        //get FWD policy for pg and delete it after deleting pg
+
         String selectDomainId = pg.getParentId();
         Domain selectDomain = new Domain();
         selectDomain.setId(selectDomainId);
         selectDomain.fetch();
-
-        List<IngressAdvFwdTemplate> fwdPolicies = new ArrayList<>();
-        IngressAdvFwdTemplatesFetcher advFwdFetcher = selectDomain.getIngressAdvFwdTemplates();
-        List<IngressAdvFwdTemplate> list = advFwdFetcher.fetch();
-        String filter = String.format("networkID like '%s' or locationID like '%s'", pg.getId(), pg.getId());
-        for (IngressAdvFwdTemplate fwdPolicy : list){
-            IngressAdvFwdEntryTemplatesFetcher entryFetcher = fwdPolicy.getIngressAdvFwdEntryTemplates();
-            List<IngressAdvFwdEntryTemplate> entries = entryFetcher.fetch(filter, null, null, null, null, null, false);
-            if (!entries.isEmpty()){
-                fwdPolicies.add(fwdPolicy);
+        PolicyGroupsFetcher pgsFetcher = selectDomain.getPolicyGroups();
+        List<PolicyGroup> pgs = pgsFetcher.get();
+        for (PolicyGroup pg2 : pgs) {
+            if (pg2.getId().equals(policyGroup.getElementId())) {
+                pg2.assign(new ArrayList<VPort>(), VPort.class);
+                pg2.delete();
             }
         }
-        for (IngressAdvFwdTemplate fwdPolicy : fwdPolicies){
-            fwdPolicy.delete();
-        }
-        //unassign all VPorts
-        VPortsFetcher vpFetcher = pg.getVPorts();
-        for (VPort vport : vpFetcher.fetch()){
-            PolicyGroup removeThis = null;
-            for (PolicyGroup pgFor : vport.getPolicyGroups().fetch()){
-                if (pgFor.getId().equals(pg.getId())){
-                    removeThis = pgFor;
-                    break;
-                }
-            }
-            vport.getPolicyGroups().remove(removeThis);
-            vport.assign(vport.getPolicyGroups());
-        }
-        pg.delete();
     }
 
     private IngressAdvFwdTemplate getForwardingPolicy(Domain selectDomain, PolicyGroup polGrp) throws RestException {
