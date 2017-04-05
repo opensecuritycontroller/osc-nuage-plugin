@@ -17,7 +17,8 @@ public class NuageRestApi implements AutoCloseable {
         ClassLoader oldCCL = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-            this.vsdSession = getNuageVSDSession(vc.isControllerHttps());
+            // TODO sridhar: This should come from the VC.isControllerHttps() instead.
+            this.vsdSession = getNuageVSDSession(true);
         } finally {
             Thread.currentThread().setContextClassLoader(oldCCL);
         }

@@ -107,7 +107,7 @@ public class NuageSecurityControllerApi implements Closeable {
         }
     }
 
-    public void deletePolicyGroup(NetworkElement policyGroup) throws RestException{
+    public void deletePolicyGroup(NetworkElement policyGroup) throws RestException {
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
 
@@ -175,6 +175,7 @@ public class NuageSecurityControllerApi implements Closeable {
             //create forwarding policy
             IngressAdvFwdTemplate fwdPolicy = new IngressAdvFwdTemplate();
             fwdPolicy.setActive(true);
+            fwdPolicy.setPriority(1L);
             fwdPolicy.setName("FwdPolicy-" + UUID.randomUUID().toString());
             selectDomain.createChild(fwdPolicy);
             return fwdPolicy;
@@ -211,29 +212,15 @@ public class NuageSecurityControllerApi implements Closeable {
         }
     }
 
-    private RedirectionTarget getUnusedRedirectionTarget(Domain selectDomain) throws RestException{
-        List<RedirectionTarget> rts = selectDomain.getRedirectionTargets().fetch();
-        for (RedirectionTarget rt : rts){
-            if (rt.getVPorts().fetch().isEmpty()){
-                return rt;
-            }
-        }
-        return null;
-    }
-
     private void createRedirectionTargetAndAssignVPorts(String rtName, String inspectionPortOSId, Domain selectDomain)
             throws RestException {
         String filter;
-        RedirectionTarget unusedRT = getUnusedRedirectionTarget(selectDomain);
+
         RedirectionTarget rt = new RedirectionTarget();
-        if (unusedRT != null){
-            rt = unusedRT;
-        } else {
-            rt.setName(rtName);
-            rt.setEndPointType(EndPointType.VIRTUAL_WIRE);
-            rt.setRedundancyEnabled(false);
-            selectDomain.createChild(rt);
-        }
+        rt.setName(rtName);
+        rt.setEndPointType(EndPointType.VIRTUAL_WIRE);
+        rt.setRedundancyEnabled(false);
+        selectDomain.createChild(rt);
 
         filter = String.format("name like '%s'", inspectionPortOSId);
         VPortsFetcher vportFet = selectDomain.getVPorts();
@@ -408,6 +395,38 @@ public class NuageSecurityControllerApi implements Closeable {
                 activeFwdPolicy.delete();
             }
 
+        }
+    }
+
+    public void deleteInspectionPort( String selectDomainId, InspectionPortElement inspPort) throws Exception {
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
+        session.start();
+
+        Domain selectDomain = new Domain();
+        selectDomain.setId(selectDomainId);
+        selectDomain.fetch();
+
+        String ingrInspectionPortOSId = inspPort.getIngressPort().getElementId(),
+                egrInspectionPortOSId = inspPort.getEgressPort().getElementId();
+        if (ingrInspectionPortOSId != null) {
+            handleDeleteRT(selectDomain, ingrInspectionPortOSId);
+        }
+        if (egrInspectionPortOSId != null) {
+            handleDeleteRT(selectDomain, ingrInspectionPortOSId);
+        }
+
+    }
+
+    private void handleDeleteRT(Domain selectDomain, String ingrInspectionPortOSId) throws RestException {
+        String filter = String.format("name like '%s'", ingrInspectionPortOSId);
+        VPortsFetcher vportFet = selectDomain.getVPorts();
+        List<VPort> vports  = vportFet.fetch(filter, null, null, null, null, null, Boolean.FALSE);
+        if (!CollectionUtils.isEmpty(vports)){
+            RedirectionTargetsFetcher rtFetch = vports.get(0).getRedirectionTargets();
+            RedirectionTarget rt = rtFetch.getFirst();
+            if (rt != null){
+                rt.delete();
+            }
         }
     }
 
