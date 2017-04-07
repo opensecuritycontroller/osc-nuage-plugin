@@ -467,7 +467,7 @@ public class NuageSecurityControllerApi implements Closeable {
             handleDeleteRT(selectDomain, ingrInspectionPortOSId);
         }
         if (egrInspectionPortOSId != null) {
-            handleDeleteRT(selectDomain, ingrInspectionPortOSId);
+            handleDeleteRT(selectDomain, egrInspectionPortOSId);
         }
 
     }
