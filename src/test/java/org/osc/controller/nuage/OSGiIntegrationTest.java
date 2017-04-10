@@ -2,10 +2,7 @@ package org.osc.controller.nuage;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
-import static org.ops4j.pax.exam.CoreOptions.bundle;
-import static org.ops4j.pax.exam.CoreOptions.junitBundles;
-import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.*;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -19,7 +16,12 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 
 import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
+import org.ops4j.pax.exam.spi.reactors.PerMethod;
 import org.ops4j.pax.exam.util.PathUtils;
 import org.osc.sdk.controller.api.SdnControllerApi;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
@@ -30,8 +32,8 @@ import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.util.tracker.ServiceTracker;
 
-//@RunWith(PaxExam.class)
-//@ExamReactorStrategy(PerMethod.class)
+@RunWith(PaxExam.class)
+@ExamReactorStrategy(PerMethod.class)
 public class OSGiIntegrationTest extends AbstractNuageTest {
     @Inject
     ConfigurationAdmin configAdmin;
@@ -133,7 +135,7 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
         this.tracker.open();
     }
 
-    //@Test
+    @Test
     public void testRegistered() throws InterruptedException {
         SdnControllerApi service = this.tracker.waitForService(5000);
         assertNotNull(service);
@@ -151,7 +153,7 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
      * we could start a simple local server to connect to...
      * @throws Exception
      */
-    //@Test
+    @Test
     public void testConnect() throws Exception {
         SdnControllerApi service = this.tracker.waitForService(5000);
         assertNotNull(service);
