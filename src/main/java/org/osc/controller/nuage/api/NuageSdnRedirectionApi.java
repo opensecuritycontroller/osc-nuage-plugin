@@ -14,6 +14,8 @@ import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.osc.sdk.controller.exception.NetworkPortNotFoundException;
 import org.springframework.util.CollectionUtils;
 
+import net.nuagenetworks.vspk.v4_0.IngressAdvFwdTemplate;
+
 public class NuageSdnRedirectionApi implements SdnRedirectionApi {
 
     private VirtualizationConnectorElement vc;
@@ -144,7 +146,8 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
         }
     }
 
-    public void removeInspectionPort( InspectionPortElement inspectionPort)
+    @Override
+    public void removeInspectionPort(InspectionPortElement inspectionPort)
             throws NetworkPortNotFoundException, Exception {
         String domainId = null;
         if (inspectionPort != null && inspectionPort.getIngressPort() != null) {
@@ -170,7 +173,13 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
 
     @Override
     public InspectionHookElement getInspectionHook(String inspectionHookId) throws Exception {
-        // TODO Auto-generated method stub
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
+            IngressAdvFwdTemplate fwdPolicy = nuageSecApi.getFwdPolicy(inspectionHookId);
+            if (fwdPolicy != null) {
+                return new InpectionHookElementImpl(inspectionHookId);
+            }
+        }
+
         return null;
     }
 
@@ -178,5 +187,54 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
     public void updateInspectionHook(InspectionHookElement existingInspectionHook)
             throws NetworkPortNotFoundException, Exception {
         throw new NotImplementedException("Updating an inspeciton hook is currently not supported by this plugin");
+    }
+
+    private class InpectionHookElementImpl implements InspectionHookElement {
+        private String id;
+
+        InpectionHookElementImpl(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public String getHookId() {
+            return this.id;
+        }
+
+        @Override
+        public Long getTag() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public Long getOrder() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public TagEncapsulationType getEncType() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public FailurePolicyType getFailurePolicyType() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public NetworkElement getInspectedPort() {
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public InspectionPortElement getInspectionPort() {
+            // TODO Auto-generated method stub
+            return null;
+        }
     }
 }
