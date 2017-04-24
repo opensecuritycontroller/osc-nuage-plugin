@@ -208,14 +208,22 @@ public class NuageSecurityControllerApi implements Closeable {
             //create redirection target if not exists for inspection ports
             //single inspection interface
             if (inspectionPort.getIngressPort().getElementId().equals(inspectionPort.getEgressPort().getElementId())){
-                createRedirectionTargetAndAssignVPorts("RT-IngAndEgr-" + UUID.randomUUID().toString(),
-                        inspectionPort.getIngressPort().getElementId(), selectDomain);
+                if (!isRedirectionTargetRegistered(inspectionPort.getIngressPort().getElementId(), selectDomain)){
+                    createRedirectionTargetAndAssignVPorts("RT-IngAndEgr-" + UUID.randomUUID().toString(),
+                            inspectionPort.getIngressPort().getElementId(), selectDomain);
+                }
+
             } else {
                 //dual inspection interface
-                createRedirectionTargetAndAssignVPorts("RT-Ingress-" + UUID.randomUUID().toString(),
-                        inspectionPort.getIngressPort().getElementId(), selectDomain);
-                createRedirectionTargetAndAssignVPorts("RT-Egress-" + UUID.randomUUID().toString(),
-                        inspectionPort.getEgressPort().getElementId(), selectDomain);
+                if (!isRedirectionTargetRegistered(inspectionPort.getIngressPort().getElementId(), selectDomain)){
+                    createRedirectionTargetAndAssignVPorts("RT-Ingress-" + UUID.randomUUID().toString(),
+                            inspectionPort.getIngressPort().getElementId(), selectDomain);
+                }
+
+                if (!isRedirectionTargetRegistered(inspectionPort.getEgressPort().getElementId(), selectDomain)){
+                    createRedirectionTargetAndAssignVPorts("RT-Egress-" + UUID.randomUUID().toString(),
+                            inspectionPort.getEgressPort().getElementId(), selectDomain);
+                }
             }
         }
     }
