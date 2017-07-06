@@ -1,5 +1,5 @@
 # osc-nuage-plugin
-[![Build Status](https://travis-ci.com/arvindn05/osc-nuage-plugin.svg?token=FzxT1Qx9H6sqEHPcKhqW&branch=master)](https://travis-ci.com/arvindn05/osc-nuage-plugin)
+[![Build Status](https://travis-ci.org/opensecuritycontroller/osc-nuage-plugin.svg?branch=master)](https://travis-ci.org/opensecuritycontroller/osc-nuage-plugin)
 
 To install an updated dependency jar into basedir\local-maven-repo
 
