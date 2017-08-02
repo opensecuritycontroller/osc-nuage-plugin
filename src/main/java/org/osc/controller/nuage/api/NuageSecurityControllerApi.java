@@ -299,7 +299,7 @@ public class NuageSecurityControllerApi implements Closeable {
             }
             return new DefaultInspectionPort(
                     new DefaultNetworkPort(ingrInspectionPortOSId, null),
-                    new DefaultNetworkPort(egrInspectionPortOSId, null));
+                    new DefaultNetworkPort(egrInspectionPortOSId, null), null);
 
         }
         return null;

@@ -233,6 +233,11 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
             public TrustManager[] getTruststoreManager() throws Exception {
                 return null;
             }
+
+			@Override
+			public String getProviderAdminDomainId() {
+				return "default";
+			}
         }, "foo");
     }
 }
