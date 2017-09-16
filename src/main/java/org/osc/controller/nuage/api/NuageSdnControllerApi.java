@@ -27,7 +27,6 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
                 SUPPORT_PORT_GROUP + ":Boolean=true",
                 SUPPORT_NEUTRON_SFC + ":Boolean=false" })
 public class NuageSdnControllerApi implements SdnControllerApi {
-
     private Config config;
 
     @SuppressWarnings("unused")
@@ -77,5 +76,4 @@ public class NuageSdnControllerApi implements SdnControllerApi {
     @Override
     public void close() throws Exception {
     }
-
 }

@@ -187,7 +187,9 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
 
     @Override
     public NetworkElement getNetworkElementByDeviceOwnerId(String deviceOwnerId) throws Exception {
-        throw new NotImplementedException("Retrieving the network element given the device owner id is currently not supported.");
+        try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
+            return nuageSecApi.getNetworkElement(deviceOwnerId);
+        }
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.osc.controller.nuage.api;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +17,8 @@ import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.springframework.util.CollectionUtils;
 
 import net.nuagenetworks.bambou.RestException;
+import net.nuagenetworks.vspk.v4_0.Container;
+import net.nuagenetworks.vspk.v4_0.ContainerInterface;
 import net.nuagenetworks.vspk.v4_0.Domain;
 import net.nuagenetworks.vspk.v4_0.Enterprise;
 import net.nuagenetworks.vspk.v4_0.IngressAdvFwdEntryTemplate;
@@ -32,6 +35,8 @@ import net.nuagenetworks.vspk.v4_0.RedirectionTarget;
 import net.nuagenetworks.vspk.v4_0.RedirectionTarget.EndPointType;
 import net.nuagenetworks.vspk.v4_0.VPort;
 import net.nuagenetworks.vspk.v4_0.VPort.AddressSpoofing;
+import net.nuagenetworks.vspk.v4_0.fetchers.ContainerInterfacesFetcher;
+import net.nuagenetworks.vspk.v4_0.fetchers.ContainersFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.DomainsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdTemplatesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.PolicyGroupsFetcher;
@@ -39,7 +44,7 @@ import net.nuagenetworks.vspk.v4_0.fetchers.RedirectionTargetsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.VPortsFetcher;
 
 public class NuageSecurityControllerApi implements Closeable {
-    private Logger log = Logger.getLogger(NuageSecurityControllerApi.class);
+    private static final Logger LOG = Logger.getLogger(NuageSecurityControllerApi.class);
 
     private NuageRestApi nuageRestApi = null;
 
@@ -166,6 +171,44 @@ public class NuageSecurityControllerApi implements Closeable {
         return selectDomain;
     }
 
+
+    NetworkElement getNetworkElement(String deviceOwnerId) throws RestException {
+        if (deviceOwnerId == null || deviceOwnerId.isEmpty()) {
+            throw new IllegalArgumentException("The provided device owner id should not be null or empty.");
+        }
+
+        OSCVSDSession session = this.nuageRestApi.getVsdSession();
+        session.start();
+        Me me = session.getMe();
+        me.getEnterprises().getFirst();
+        ContainersFetcher cf = me.getContainers();
+        List<Container> containers = cf.fetch();
+
+        // TODO: This is a temporary workaround to filter the container by name and namespace. when Nuage exposes the POD UUID this will no longer be needed.
+        String[] idParts = deviceOwnerId.split(":");
+        String podNamespace = idParts[0];
+        String podName = idParts[1];
+
+        for (Container container : containers) {
+            ContainerInterfacesFetcher itsFetcher = container.getContainerInterfaces();
+            ContainerInterface itf = itsFetcher.getFirst();
+
+            if (container.getName().equals(podName)) {
+                LOG.info(String.format("Found container with name %s, namespace %s", container.getName(), itf.getZoneName()));
+
+                if (itf.getZoneName().equals(podNamespace)) {
+                    DefaultNetworkPort podPort = new DefaultNetworkPort(itf.getVPortID(), itf.getMAC());
+                    podPort.setParentId(itf.getDomainID());
+                    podPort.setPortIPs(Arrays.asList(itf.getIPAddress()));
+                    return podPort;
+                }
+            }
+        }
+
+        LOG.warn(String.format("No container found with name %s, namespace %s", podName, podNamespace));
+        return null;
+    }
+
     private List<IngressAdvFwdTemplate> getForwardingPolicies(Domain selectDomain) throws RestException {
         String filter = String.format("active like '%s'", true);
         IngressAdvFwdTemplatesFetcher advFwdFetcher = selectDomain.getIngressAdvFwdTemplates();
@@ -289,12 +332,12 @@ public class NuageSecurityControllerApi implements Closeable {
             String ingrInspectionPortOSId = inspectionPort.getIngressPort().getElementId(),
                     egrInspectionPortOSId = inspectionPort.getEgressPort().getElementId();
             if (!isRedirectionTargetRegistered(ingrInspectionPortOSId, selectDomain)){
-                this.log.info("Inspection port ingress: '" + ingrInspectionPortOSId + "' not registered.");
+                LOG.info("Inspection port ingress: '" + ingrInspectionPortOSId + "' not registered.");
                 return null;
             }
 
             if (!isRedirectionTargetRegistered(egrInspectionPortOSId, selectDomain)){
-                this.log.info("Inspection port egress: '" + egrInspectionPortOSId + "' not registered.");
+                LOG.info("Inspection port egress: '" + egrInspectionPortOSId + "' not registered.");
                 return null;
             }
             return new DefaultInspectionPort(
@@ -497,7 +540,7 @@ public class NuageSecurityControllerApi implements Closeable {
                         break;
                     }
                     fwdPolicyJob.fetch();
-                    this.log.info(fwdPolicyJob);
+                    LOG.info(fwdPolicyJob);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -519,7 +562,7 @@ public class NuageSecurityControllerApi implements Closeable {
                         break;
                     }
                     fwdPolicyJob.fetch();
-                    this.log.info(fwdPolicyJob);
+                    LOG.info(fwdPolicyJob);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
