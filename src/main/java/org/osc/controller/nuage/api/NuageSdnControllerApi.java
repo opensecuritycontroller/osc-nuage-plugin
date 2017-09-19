@@ -24,7 +24,8 @@ import org.osgi.service.metatype.annotations.ObjectClassDefinition;
                 SUPPORT_FAILURE_POLICY + ":Boolean=false",
                 USE_PROVIDER_CREDS + ":Boolean=false",
                 QUERY_PORT_INFO + ":Boolean=false",
-                SUPPORT_PORT_GROUP + ":Boolean=true" })
+                SUPPORT_PORT_GROUP + ":Boolean=true",
+                SUPPORT_NEUTRON_SFC + ":Boolean=false" })
 public class NuageSdnControllerApi implements SdnControllerApi {
 
     private Config config;
