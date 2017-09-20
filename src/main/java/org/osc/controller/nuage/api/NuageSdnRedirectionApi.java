@@ -145,7 +145,7 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
                 nuageSecApi.createRedirectionTarget(inspectionPort, domainId);
             }
         }
-		return null;
+        return null;
     }
 
     @Override
@@ -183,6 +183,11 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
         }
 
         return null;
+    }
+
+    @Override
+    public NetworkElement getNetworkElementByDeviceOwnerId(String deviceOwnerId) throws Exception {
+        throw new NotImplementedException("Retrieving the network element given the device owner id is currently not supported.");
     }
 
     @Override
