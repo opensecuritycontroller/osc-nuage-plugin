@@ -32,16 +32,16 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
     }
 
     @Override
-    public String installInspectionHook(List<NetworkElement> policyGroup, InspectionPortElement inspectionPort, Long tag,
+    public String installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort, Long tag,
             TagEncapsulationType encType, Long order, FailurePolicyType failurePolicyType)
                     throws NetworkPortNotFoundException, Exception {
         try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
-            return nuageSecApi.installInspectionHook(policyGroup.iterator().next(), inspectionPort);
+            return nuageSecApi.installInspectionHook(policyGroup, inspectionPort);
         }
     }
 
     @Override
-    public void removeInspectionHook(List<NetworkElement> policyGroup, InspectionPortElement inspectionPort)
+    public void removeInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
             throws Exception {
         throw new NotImplementedException("This method is not expected to be called for Nuage. "
                 + "It is only applicable for SDN controller that does not support port group");
