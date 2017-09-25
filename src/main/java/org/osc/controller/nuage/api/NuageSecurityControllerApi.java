@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.apache.log4j.Logger;
 import org.osc.sdk.controller.DefaultInspectionPort;
 import org.osc.sdk.controller.DefaultNetworkPort;
+import org.osc.sdk.controller.element.Element;
 import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
@@ -194,11 +196,11 @@ public class NuageSecurityControllerApi implements Closeable {
             ContainerInterface itf = itsFetcher.getFirst();
 
             if (container.getName().equals(podName)) {
-                LOG.info(String.format("Found container with name %s, namespace %s", container.getName(), itf.getZoneName()));
+                LOG.info(String.format("Found container with name %s, namespace %s, domain id %s, domain name %s", container.getName(), itf.getZoneName(), itf.getDomainID(), itf.getDomainName()));
 
                 if (itf.getZoneName().equals(podNamespace)) {
                     DefaultNetworkPort podPort = new DefaultNetworkPort(itf.getVPortID(), itf.getMAC());
-                    podPort.setParentId(itf.getDomainID());
+                    podPort.setParentId(itf.getDomainName());
                     podPort.setPortIPs(Arrays.asList(itf.getIPAddress()));
                     return podPort;
                 }
@@ -234,12 +236,10 @@ public class NuageSecurityControllerApi implements Closeable {
         return null;
     }
 
-    public void createRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
-
+    public Element registerRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
         Me me = session.getMe();
-
         Enterprise enterprise = me.getEnterprises().getFirst();
 
         Domain selectDomain = null;
@@ -251,24 +251,30 @@ public class NuageSecurityControllerApi implements Closeable {
             //create redirection target if not exists for inspection ports
             //single inspection interface
             if (inspectionPort.getIngressPort().getElementId().equals(inspectionPort.getEgressPort().getElementId())){
-                if (!isRedirectionTargetRegistered(inspectionPort.getIngressPort().getElementId(), selectDomain)){
-                    createRedirectionTargetAndAssignVPorts("RT-IngAndEgr-" + UUID.randomUUID().toString(),
-                            inspectionPort.getIngressPort().getElementId(), selectDomain);
+                RedirectionTarget existingRt = getRedirectionTarget(inspectionPort.getIngressPort().getElementId(), selectDomain);
+                if (existingRt == null){
+                    return registerRedirectionTargetAndAssignVPorts("RT-IngAndEgr-" + UUID.randomUUID().toString(),
+                            inspectionPort.getIngressPort().getElementId(), selectDomain, inspectionPort.getElementId());
+                } else {
+                    return new DefaultElement(existingRt.getId(), existingRt.getParentId());
                 }
-
             } else {
                 //dual inspection interface
-                if (!isRedirectionTargetRegistered(inspectionPort.getIngressPort().getElementId(), selectDomain)){
-                    createRedirectionTargetAndAssignVPorts("RT-Ingress-" + UUID.randomUUID().toString(),
-                            inspectionPort.getIngressPort().getElementId(), selectDomain);
+                if (getRedirectionTarget(inspectionPort.getIngressPort().getElementId(), selectDomain) == null){
+                    registerRedirectionTargetAndAssignVPorts("RT-Ingress-" + UUID.randomUUID().toString(),
+                            inspectionPort.getIngressPort().getElementId(), selectDomain, inspectionPort.getElementId());
                 }
 
-                if (!isRedirectionTargetRegistered(inspectionPort.getEgressPort().getElementId(), selectDomain)){
-                    createRedirectionTargetAndAssignVPorts("RT-Egress-" + UUID.randomUUID().toString(),
-                            inspectionPort.getEgressPort().getElementId(), selectDomain);
+                if (getRedirectionTarget(inspectionPort.getEgressPort().getElementId(), selectDomain) == null){
+                    registerRedirectionTargetAndAssignVPorts("RT-Egress-" + UUID.randomUUID().toString(),
+                            inspectionPort.getEgressPort().getElementId(), selectDomain, inspectionPort.getElementId());
                 }
             }
         }
+        // TODO: This should return an element with an id representing both RTs.
+        // This return is currently not used by OSC for OpenStack cases and for K8s cases only
+        // a single port is currently expected. Once this expectation changes this must be addressed.
+        return null;
     }
 
     public IngressAdvFwdTemplate getFwdPolicy(String inspecHookId) throws Exception {
@@ -295,15 +301,30 @@ public class NuageSecurityControllerApi implements Closeable {
         return null;
     }
 
-    private void createRedirectionTargetAndAssignVPorts(String rtName, String inspectionPortOSId, Domain selectDomain)
+    private Element registerRedirectionTargetAndAssignVPorts(String rtName, String inspectionPortOSId, Domain selectDomain, String rtId)
             throws RestException {
         String filter;
+        RedirectionTarget rt = null;
+        if (rtId != null) {
+            LOG.info(String.format("RT id was provided %s", rtId));
+            RedirectionTargetsFetcher rtFetcher = selectDomain.getRedirectionTargets();
+            List<RedirectionTarget> rts = rtFetcher.get();
 
-        RedirectionTarget rt = new RedirectionTarget();
-        rt.setName(rtName);
-        rt.setEndPointType(EndPointType.VIRTUAL_WIRE);
-        rt.setRedundancyEnabled(false);
-        selectDomain.createChild(rt);
+            Optional<RedirectionTarget> optionalRt = rts.stream().filter(x -> x.getId().equals(rtId)).findFirst();
+            rt = optionalRt.orElse(null);
+        }
+
+        // If an existing RT is not found, create a new one.
+        if (rt == null) {
+            LOG.info("Creating a new RT");
+            rt = new RedirectionTarget();
+            rt.setName(rtName);
+            rt.setEndPointType(EndPointType.VIRTUAL_WIRE);
+            rt.setRedundancyEnabled(false);
+            selectDomain.createChild(rt);
+        } else {
+            LOG.info(String.format("Existing RT with id %s and name %s", rt.getId(), rt.getName()));
+        }
 
         filter = String.format("name like '%s'", inspectionPortOSId);
         VPortsFetcher vportFet = selectDomain.getVPorts();
@@ -315,6 +336,7 @@ public class NuageSecurityControllerApi implements Closeable {
             rt.assign(vports);
         }
 
+        return new DefaultElement(rt.getId(), rt.getParentId());
     }
 
     public InspectionPortElement getRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
@@ -331,12 +353,12 @@ public class NuageSecurityControllerApi implements Closeable {
             selectDomain = dms.get(0);
             String ingrInspectionPortOSId = inspectionPort.getIngressPort().getElementId(),
                     egrInspectionPortOSId = inspectionPort.getEgressPort().getElementId();
-            if (!isRedirectionTargetRegistered(ingrInspectionPortOSId, selectDomain)){
+            if (getRedirectionTarget(ingrInspectionPortOSId, selectDomain) == null){
                 LOG.info("Inspection port ingress: '" + ingrInspectionPortOSId + "' not registered.");
                 return null;
             }
 
-            if (!isRedirectionTargetRegistered(egrInspectionPortOSId, selectDomain)){
+            if (getRedirectionTarget(egrInspectionPortOSId, selectDomain) == null){
                 LOG.info("Inspection port egress: '" + egrInspectionPortOSId + "' not registered.");
                 return null;
             }
@@ -348,19 +370,17 @@ public class NuageSecurityControllerApi implements Closeable {
         return null;
     }
 
-    private boolean isRedirectionTargetRegistered(String inspectionPortOSId, Domain selectDomain)
+    private RedirectionTarget getRedirectionTarget(String inspectionPortOSId, Domain selectDomain)
             throws RestException {
         String filter = String.format("name like '%s'", inspectionPortOSId);
         VPortsFetcher vportFet = selectDomain.getVPorts();
         List<VPort> vports  = vportFet.fetch(filter, null, null, null, null, null, Boolean.FALSE);
         if (!CollectionUtils.isEmpty(vports)){
             RedirectionTargetsFetcher rtFetch = vports.get(0).getRedirectionTargets();
-            RedirectionTarget rt = rtFetch.getFirst();
-            if (rt != null){
-                return true;
-            }
+            return rtFetch.getFirst();
         }
-        return false;
+
+        return null;
     }
 
     public String installInspectionHook(NetworkElement policyGroup, InspectionPortElement inspectionPort)
@@ -580,5 +600,25 @@ public class NuageSecurityControllerApi implements Closeable {
         public int compare(IngressAdvFwdTemplate fwrdPol1, IngressAdvFwdTemplate fwrdPol2) {
             return (int) (fwrdPol1.getPriority() - fwrdPol2.getPriority());
         }
+    }
+
+    private class DefaultElement implements Element {
+        private String elementId;
+        private String parentId;
+
+        DefaultElement (String elementId, String parentId) {
+            this.elementId = elementId;
+            this.parentId = parentId;
+        }
+        @Override
+        public String getElementId() {
+            return this.elementId;
+        }
+
+        @Override
+        public String getParentId() {
+            return this.parentId;
+        }
+
     }
 }

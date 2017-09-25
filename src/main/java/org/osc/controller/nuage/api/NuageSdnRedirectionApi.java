@@ -140,9 +140,9 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
             throws NetworkPortNotFoundException, Exception {
         String domainId = null;
         if (inspectionPort != null && inspectionPort.getIngressPort() != null) {
-            domainId = inspectionPort.getIngressPort().getParentId();
+            domainId = inspectionPort.getParentId() == null ? inspectionPort.getIngressPort().getParentId() : inspectionPort.getParentId();
             try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())){
-                nuageSecApi.createRedirectionTarget(inspectionPort, domainId);
+                return nuageSecApi.registerRedirectionTarget(inspectionPort, domainId);
             }
         }
         return null;
@@ -153,7 +153,7 @@ public class NuageSdnRedirectionApi implements SdnRedirectionApi {
             throws NetworkPortNotFoundException, Exception {
         String domainId = null;
         if (inspectionPort != null && inspectionPort.getIngressPort() != null) {
-            domainId = inspectionPort.getIngressPort().getParentId();
+            domainId = inspectionPort.getParentId() == null ? inspectionPort.getIngressPort().getParentId() : inspectionPort.getParentId();
             try (NuageSecurityControllerApi nuageSecApi = new NuageSecurityControllerApi(this.vc, this.config.port())) {
                 nuageSecApi.deleteInspectionPort(domainId, inspectionPort);
             }
