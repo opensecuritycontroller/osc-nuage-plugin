@@ -509,15 +509,22 @@ public class NuageSecurityControllerApi implements Closeable {
 
         Domain selectDomain = getDomain(session, selectDomainId);
 
+        // If the inspection port id has been provided deleted by Id.
+        // For now, only one RT is expected for this case: Kubernetes.
+        if (inspPort.getElementId() != null) {
+            deleteRTById(selectDomain, inspPort.getElementId());
+            return;
+        }
+
         String ingrInspectionPortOSId = inspPort.getIngressPort().getElementId(),
                 egrInspectionPortOSId = inspPort.getEgressPort().getElementId();
+
         if (ingrInspectionPortOSId != null) {
             handleDeleteRT(selectDomain, ingrInspectionPortOSId);
         }
         if (egrInspectionPortOSId != null) {
             handleDeleteRT(selectDomain, egrInspectionPortOSId);
         }
-
     }
 
     private void handleDeleteRT(Domain selectDomain, String ingrInspectionPortOSId) throws RestException {
@@ -531,6 +538,18 @@ public class NuageSecurityControllerApi implements Closeable {
                 rt.assign(new ArrayList<VPort>(), VPort.class);
                 rt.delete();
             }
+        }
+    }
+
+    private void deleteRTById(Domain selectDomain, String rtId) throws RestException {
+        RedirectionTargetsFetcher rtFetcher = selectDomain.getRedirectionTargets();
+
+        List<RedirectionTarget> rts = rtFetcher.get();
+
+        Optional<RedirectionTarget> optionalRt = rts.stream().filter(x -> x.getId().equals(rtId)).findFirst();
+
+        if (optionalRt.isPresent()) {
+            optionalRt.get().delete();
         }
     }
 
