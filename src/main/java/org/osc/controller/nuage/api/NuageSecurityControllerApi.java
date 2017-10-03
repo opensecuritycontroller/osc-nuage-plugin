@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.apache.log4j.Logger;
 import org.osc.sdk.controller.DefaultInspectionPort;
 import org.osc.sdk.controller.DefaultNetworkPort;
 import org.osc.sdk.controller.element.Element;
 import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
+import org.slf4j.Logger;
 import org.springframework.util.CollectionUtils;
 
 import net.nuagenetworks.bambou.RestException;
@@ -46,7 +46,7 @@ import net.nuagenetworks.vspk.v4_0.fetchers.RedirectionTargetsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.VPortsFetcher;
 
 public class NuageSecurityControllerApi implements Closeable {
-    private static final Logger LOG = Logger.getLogger(NuageSecurityControllerApi.class);
+    private static final Logger LOG = LogProvider.getLogger(NuageSecurityControllerApi.class);
 
     private NuageRestApi nuageRestApi = null;
 
@@ -579,7 +579,7 @@ public class NuageSecurityControllerApi implements Closeable {
                         break;
                     }
                     fwdPolicyJob.fetch();
-                    LOG.info(fwdPolicyJob);
+                    LOG.info(fwdPolicyJob.toString());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -601,7 +601,7 @@ public class NuageSecurityControllerApi implements Closeable {
                         break;
                     }
                     fwdPolicyJob.fetch();
-                    LOG.info(fwdPolicyJob);
+                    LOG.info(fwdPolicyJob.toString());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
