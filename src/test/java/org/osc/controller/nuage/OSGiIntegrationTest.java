@@ -54,8 +54,8 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
                 mavenBundle("org.apache.felix", "org.apache.felix.scr").versionAsInProject(),
 
                 mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
-                // Fragment bundles cannot be started
-                mavenBundle("org.slf4j", "slf4j-simple").versionAsInProject().noStart(),
+                mavenBundle("ch.qos.logback", "logback-core").versionAsInProject(),
+                mavenBundle("ch.qos.logback", "logback-classic").versionAsInProject(),
 
                 mavenBundle("commons-logging", "commons-logging").versionAsInProject(),
                 mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
