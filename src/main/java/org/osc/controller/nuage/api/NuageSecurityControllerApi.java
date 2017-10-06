@@ -16,6 +16,7 @@ import org.osc.sdk.controller.element.InspectionPortElement;
 import org.osc.sdk.controller.element.NetworkElement;
 import org.osc.sdk.controller.element.VirtualizationConnectorElement;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import net.nuagenetworks.bambou.RestException;
@@ -46,7 +47,7 @@ import net.nuagenetworks.vspk.v4_0.fetchers.RedirectionTargetsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.VPortsFetcher;
 
 public class NuageSecurityControllerApi implements Closeable {
-    private static final Logger LOG = LogProvider.getLogger(NuageSecurityControllerApi.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NuageSecurityControllerApi.class);
 
     private NuageRestApi nuageRestApi = null;
 
