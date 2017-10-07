@@ -53,7 +53,10 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
                 // And some dependencies
                 mavenBundle("org.apache.felix", "org.apache.felix.scr").versionAsInProject(),
 
-                mavenBundle("log4j", "log4j").versionAsInProject(),
+                mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
+                mavenBundle("ch.qos.logback", "logback-core").versionAsInProject(),
+                mavenBundle("ch.qos.logback", "logback-classic").versionAsInProject(),
+
                 mavenBundle("commons-logging", "commons-logging").versionAsInProject(),
                 mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
                 mavenBundle("commons-codec", "commons-codec").versionAsInProject(),
