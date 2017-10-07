@@ -56,8 +56,8 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
                 mavenBundle("org.slf4j", "slf4j-api").versionAsInProject(),
                 mavenBundle("ch.qos.logback", "logback-core").versionAsInProject(),
                 mavenBundle("ch.qos.logback", "logback-classic").versionAsInProject(),
+                mavenBundle("org.slf4j", "jcl-over-slf4j").versionAsInProject(),
 
-                mavenBundle("commons-logging", "commons-logging").versionAsInProject(),
                 mavenBundle("org.apache.directory.studio", "org.apache.commons.lang").versionAsInProject(),
                 mavenBundle("commons-codec", "commons-codec").versionAsInProject(),
                 mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
@@ -237,10 +237,10 @@ public class OSGiIntegrationTest extends AbstractNuageTest {
                 return null;
             }
 
-			@Override
-			public String getProviderAdminDomainId() {
-				return "default";
-			}
+            @Override
+            public String getProviderAdminDomainId() {
+                return "default";
+            }
         }, "foo");
     }
 }

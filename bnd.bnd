@@ -37,6 +37,7 @@ Import-Package:\
 !org.aopalliance.aop.*,\
 !org.aopalliance.intercept.*,\
 !org.apache.commons.pool.*,\
+!org.apache.log4j.*,\
 !org.apache.commons.pool.impl.*,\
 !org.apache.commons.pool2.*,\
 !org.apache.commons.pool2.impl.*,\
