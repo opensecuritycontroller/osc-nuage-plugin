@@ -550,6 +550,7 @@ public class NuageSecurityControllerApi implements Closeable {
         Optional<RedirectionTarget> optionalRt = rts.stream().filter(x -> x.getId().equals(rtId)).findFirst();
 
         if (optionalRt.isPresent()) {
+            optionalRt.get().assign(new ArrayList<VPort>(), VPort.class);
             optionalRt.get().delete();
         }
     }
