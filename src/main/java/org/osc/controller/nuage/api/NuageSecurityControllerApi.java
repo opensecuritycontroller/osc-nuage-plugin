@@ -41,6 +41,7 @@ import net.nuagenetworks.vspk.v4_0.VPort.AddressSpoofing;
 import net.nuagenetworks.vspk.v4_0.fetchers.ContainerInterfacesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.ContainersFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.DomainsFetcher;
+import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdEntryTemplatesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.IngressAdvFwdTemplatesFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.PolicyGroupsFetcher;
 import net.nuagenetworks.vspk.v4_0.fetchers.RedirectionTargetsFetcher;
@@ -48,6 +49,8 @@ import net.nuagenetworks.vspk.v4_0.fetchers.VPortsFetcher;
 
 public class NuageSecurityControllerApi implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(NuageSecurityControllerApi.class);
+
+    private static final String BYPASS_FWDPOLICY_NAME = "BypassFwdPolicy";
 
     private NuageRestApi nuageRestApi = null;
 
@@ -249,6 +252,41 @@ public class NuageSecurityControllerApi implements Closeable {
         List<Domain> dms = fetcher.fetch(filter, null, null, null, null, null, Boolean.FALSE);
         if (!CollectionUtils.isEmpty(dms)) {
             selectDomain = dms.get(0);
+
+            List<NetworkElement> inspectionPorts = new ArrayList<>();
+            inspectionPorts.add(inspectionPort.getIngressPort());
+            if (!inspectionPort.getEgressPort().getElementId().equals(inspectionPort.getIngressPort().getElementId())) {
+                inspectionPorts.add(inspectionPort.getEgressPort());
+            }
+
+            // Create PolicyGroup with Ingress and Egress inspection ports
+            NetworkElement pg = createPolicyGroup(inspectionPorts, domainId);
+
+            // Create a Forwarding Policy with priority 0
+            Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(selectDomain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
+            IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
+
+            if (BypassFwdPolicy == null) {
+                BypassFwdPolicy = new IngressAdvFwdTemplate();
+                BypassFwdPolicy.setActive(true);
+                BypassFwdPolicy.setPriority(Long.valueOf(1));
+                BypassFwdPolicy.setName(BYPASS_FWDPOLICY_NAME);
+                selectDomain.createChild(BypassFwdPolicy);
+            }
+
+            IngressAdvFwdEntryTemplate bypassEntry = new IngressAdvFwdEntryTemplate();
+            bypassEntry.setUplinkPreference(UplinkPreference.PRIMARY_SECONDARY);
+            bypassEntry.setName("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
+            bypassEntry.setNetworkType(NetworkType.ANY);
+            bypassEntry.setNetworkID(null);
+            bypassEntry.setLocationType(LocationType.POLICYGROUP);
+            bypassEntry.setLocationID(pg.getElementId());
+            bypassEntry.setProtocol("ANY");//Any
+            bypassEntry.setDescription("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
+            bypassEntry.setAction(Action.FORWARD);
+
+            BypassFwdPolicy.createChild(bypassEntry, 1, true);
+
             //create redirection target if not exists for inspection ports
             //single inspection interface
             if (inspectionPort.getIngressPort().getElementId().equals(inspectionPort.getEgressPort().getElementId())){
@@ -265,11 +303,11 @@ public class NuageSecurityControllerApi implements Closeable {
                     registerRedirectionTargetAndAssignVPorts("RT-Ingress-" + UUID.randomUUID().toString(),
                             inspectionPort.getIngressPort().getElementId(), selectDomain, inspectionPort.getElementId());
                 }
-
                 if (getRedirectionTarget(inspectionPort.getEgressPort().getElementId(), selectDomain) == null){
                     registerRedirectionTargetAndAssignVPorts("RT-Egress-" + UUID.randomUUID().toString(),
                             inspectionPort.getEgressPort().getElementId(), selectDomain, inspectionPort.getElementId());
                 }
+
             }
         }
         // TODO: This should return an element with an id representing both RTs.
@@ -510,6 +548,29 @@ public class NuageSecurityControllerApi implements Closeable {
 
         Domain selectDomain = getDomain(session, selectDomainId);
 
+        // Retrieve BypassFwdPolicy
+        Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(selectDomain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
+        IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
+
+        String filter = String.format("description like '%s'", "BypassEntry-" + inspPort.getIngressPort().getElementId() + "-" + inspPort.getEgressPort().getElementId());
+
+        IngressAdvFwdEntryTemplatesFetcher advFwdEntryTemplatesFetcher = BypassFwdPolicy.getIngressAdvFwdEntryTemplates();
+        IngressAdvFwdEntryTemplate advFwdEntryTemplate = advFwdEntryTemplatesFetcher.getFirst(filter, null, null, null, null, null, Boolean.FALSE);
+
+        if (advFwdEntryTemplate != null) {
+            String pgId = advFwdEntryTemplate.getLocationID();
+            DefaultNetworkPort portGroup = new DefaultNetworkPort();
+            portGroup.setElementId(pgId);
+            portGroup.setParentId(selectDomainId);
+
+            if (BypassFwdPolicy.getIngressAdvFwdEntryTemplates().count() == 1) {
+                BypassFwdPolicy.delete();
+            } else {
+                advFwdEntryTemplate.delete();
+            }
+            deletePolicyGroup(portGroup);
+        }
+
         // If the inspection port id has been provided deleted by Id.
         // For now, only one RT is expected for this case: Kubernetes.
         if (inspPort.getElementId() != null) {
@@ -526,6 +587,7 @@ public class NuageSecurityControllerApi implements Closeable {
         if (egrInspectionPortOSId != null) {
             handleDeleteRT(selectDomain, egrInspectionPortOSId);
         }
+
     }
 
     private void handleDeleteRT(Domain selectDomain, String ingrInspectionPortOSId) throws RestException {
