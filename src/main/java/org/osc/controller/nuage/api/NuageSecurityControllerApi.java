@@ -51,6 +51,7 @@ public class NuageSecurityControllerApi implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(NuageSecurityControllerApi.class);
 
     private static final String BYPASS_FWDPOLICY_NAME = "BypassFwdPolicy";
+    private static final int BYPASS_FWDPOLICY_PRIORITY = 1;
 
     private NuageRestApi nuageRestApi = null;
 
@@ -240,6 +241,117 @@ public class NuageSecurityControllerApi implements Closeable {
         return null;
     }
 
+    /**
+     * createBypassFwdPolict creates a new forwarding policy with action FORWARD
+     * on traffic coming from ingress/egress inspection interfaces.
+     *
+     * When using vWire as a redirection target type and when the regular forwarding policy is applied
+     * on traffic coming from ANY source, the traffic is looping over the VNF. To avoid this behavior,
+     * a bypass forwarding policy can be created to prevent the traffic from looping. This new
+     * forwarding policy as a FORWARD action (instead of REDIRECT) and is applied on the traffic coming from
+     * either the ingress or egress interface. The ingress and egress interfaces are grouped within a
+     * security group to simplify the forwarding rule.
+     *
+     * Removing this method breaks the basic functionality of the plugin.
+     *
+     * @param domain The domain on which the Bypass
+     *               Forwarding Policy will be create.
+     *
+     * @param inspectionPort The inspectionPortElement which contains the ports (ingress/egress) to be
+     *                       discarded from the regular forwarding policy.
+     */
+    private void createBypassFwdPolicy(Domain domain, InspectionPortElement inspectionPort) throws Exception{
+        List<NetworkElement> inspectionPorts = new ArrayList<>();
+        inspectionPorts.add(inspectionPort.getIngressPort());
+        if (!inspectionPort.getEgressPort().getElementId().equals(inspectionPort.getIngressPort().getElementId())) {
+            inspectionPorts.add(inspectionPort.getEgressPort());
+        }
+
+        // Create PolicyGroup with Ingress and Egress inspection ports
+        NetworkElement pg = createPolicyGroup(inspectionPorts, domain.getName());
+        LOG.info(String.format("Domain ID %s", domain.getName()));
+        LOG.info(String.format("PG ID %s", pg.getElementId()));
+
+        // Find Forwarding Policies with name equal to "BYPASS_FWDPOLICY_NAME"
+        Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(domain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
+        IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
+
+        // If BypassFwdPolicy does not exist, create it
+        if (BypassFwdPolicy == null) {
+            BypassFwdPolicy = new IngressAdvFwdTemplate();
+            BypassFwdPolicy.setActive(true);
+            BypassFwdPolicy.setPriority(Long.valueOf(BYPASS_FWDPOLICY_PRIORITY));
+            BypassFwdPolicy.setName(BYPASS_FWDPOLICY_NAME);
+            domain.createChild(BypassFwdPolicy);
+        }
+
+        // Create Forwarding Rule entry (from PG (VNF) to ANY FORWARD traffic)
+        IngressAdvFwdEntryTemplate bypassEntry = new IngressAdvFwdEntryTemplate();
+        bypassEntry.setUplinkPreference(UplinkPreference.PRIMARY_SECONDARY);
+        bypassEntry.setName("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
+        bypassEntry.setNetworkType(NetworkType.ANY);
+        bypassEntry.setNetworkID(null);
+        bypassEntry.setLocationType(LocationType.POLICYGROUP);
+        bypassEntry.setLocationID(pg.getElementId());
+        bypassEntry.setProtocol("ANY"); //Any
+        bypassEntry.setDescription("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
+        bypassEntry.setAction(Action.FORWARD);
+        BypassFwdPolicy.createChild(bypassEntry, 1, true);
+    }
+
+    /**
+     * createBypassFwdPolict creates a new forwarding policy with action FORWARD
+     * on traffic coming from ingress/egress inspection interfaces.
+     *
+     * When using vWire as a redirection target type and when the regular forwarding policy is applied
+     * on traffic coming from ANY source, the traffic is looping over the VNF. To avoid this behavior,
+     * a bypass forwarding policy can be created to prevent the traffic from looping. This new
+     * forwarding policy as a FORWARD action (instead of REDIRECT) and is applied on the traffic coming from
+     * either the ingress or egress interface. The ingress and egress interfaces are grouped within a
+     * security group to simplify the forwarding rule.
+     *
+     * Removing this method breaks the basic functionality of the plugin.
+     *
+     * @param domain The domain on which the Bypass
+     *               Forwarding Policy will be create.
+     *
+     * @param inspectionPort The inspectionPortElement which contains the ports (ingress/egress) to be
+     *                       discarded from the regular forwarding policy.
+     */
+    private void deleteBypassFwdPolicy(Domain domain, InspectionPortElement inspectionPort) throws Exception {
+        // Find Forwarding Policies with name equal to "BYPASS_FWDPOLICY_NAME"
+        Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(domain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
+        IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
+
+        if (BypassFwdPolicy != null) {
+            // Find Forwarding rule with description like BypassEntry-<IngressID>-<EgressID>
+            String filter = String.format("description like '%s'", "BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
+            IngressAdvFwdEntryTemplatesFetcher advFwdEntryTemplatesFetcher = BypassFwdPolicy.getIngressAdvFwdEntryTemplates();
+            IngressAdvFwdEntryTemplate advFwdEntryTemplate = advFwdEntryTemplatesFetcher.getFirst(filter, null, null, null, null, null, Boolean.FALSE);
+
+            if (advFwdEntryTemplate != null) {
+                // Get Policy Group ID from Forwarding rule location
+                String pgId = advFwdEntryTemplate.getLocationID();
+                DefaultNetworkPort portGroup = new DefaultNetworkPort();
+                portGroup.setElementId(pgId);
+                portGroup.setParentId(domain.getName());
+
+                // Completely delete forwarding policy if there is only one rule.
+                if (BypassFwdPolicy.getIngressAdvFwdEntryTemplates().count() == 1) {
+                    BypassFwdPolicy.delete();
+                } else {
+                    // Only delete Forwarding rule entry as other rules are using
+                    // the Bypass Forwarding Policy
+                    advFwdEntryTemplate.delete();
+                }
+
+                // Delete the policy group containing the ingress and egress interfaces
+                deletePolicyGroup(portGroup);
+            }
+        }
+
+    }
+
     public Element registerRedirectionTarget(InspectionPortElement inspectionPort, String domainId) throws Exception{
         OSCVSDSession session = this.nuageRestApi.getVsdSession();
         session.start();
@@ -253,39 +365,8 @@ public class NuageSecurityControllerApi implements Closeable {
         if (!CollectionUtils.isEmpty(dms)) {
             selectDomain = dms.get(0);
 
-            List<NetworkElement> inspectionPorts = new ArrayList<>();
-            inspectionPorts.add(inspectionPort.getIngressPort());
-            if (!inspectionPort.getEgressPort().getElementId().equals(inspectionPort.getIngressPort().getElementId())) {
-                inspectionPorts.add(inspectionPort.getEgressPort());
-            }
-
-            // Create PolicyGroup with Ingress and Egress inspection ports
-            NetworkElement pg = createPolicyGroup(inspectionPorts, domainId);
-
-            // Create a Forwarding Policy with priority 0
-            Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(selectDomain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
-            IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
-
-            if (BypassFwdPolicy == null) {
-                BypassFwdPolicy = new IngressAdvFwdTemplate();
-                BypassFwdPolicy.setActive(true);
-                BypassFwdPolicy.setPriority(Long.valueOf(1));
-                BypassFwdPolicy.setName(BYPASS_FWDPOLICY_NAME);
-                selectDomain.createChild(BypassFwdPolicy);
-            }
-
-            IngressAdvFwdEntryTemplate bypassEntry = new IngressAdvFwdEntryTemplate();
-            bypassEntry.setUplinkPreference(UplinkPreference.PRIMARY_SECONDARY);
-            bypassEntry.setName("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
-            bypassEntry.setNetworkType(NetworkType.ANY);
-            bypassEntry.setNetworkID(null);
-            bypassEntry.setLocationType(LocationType.POLICYGROUP);
-            bypassEntry.setLocationID(pg.getElementId());
-            bypassEntry.setProtocol("ANY");//Any
-            bypassEntry.setDescription("BypassEntry-" + inspectionPort.getIngressPort().getElementId() + "-" + inspectionPort.getEgressPort().getElementId());
-            bypassEntry.setAction(Action.FORWARD);
-
-            BypassFwdPolicy.createChild(bypassEntry, 1, true);
+            // Avoid loop redirection by creating a bypass policy with higher priority
+            createBypassFwdPolicy(selectDomain, inspectionPort);
 
             //create redirection target if not exists for inspection ports
             //single inspection interface
@@ -548,28 +629,8 @@ public class NuageSecurityControllerApi implements Closeable {
 
         Domain selectDomain = getDomain(session, selectDomainId);
 
-        // Retrieve BypassFwdPolicy
-        Optional<IngressAdvFwdTemplate> BypassFwdPolicyTemp = getForwardingPolicies(selectDomain).stream().filter(x -> x.getName().equals(BYPASS_FWDPOLICY_NAME)).findFirst();
-        IngressAdvFwdTemplate BypassFwdPolicy = BypassFwdPolicyTemp.orElse(null);
-
-        String filter = String.format("description like '%s'", "BypassEntry-" + inspPort.getIngressPort().getElementId() + "-" + inspPort.getEgressPort().getElementId());
-
-        IngressAdvFwdEntryTemplatesFetcher advFwdEntryTemplatesFetcher = BypassFwdPolicy.getIngressAdvFwdEntryTemplates();
-        IngressAdvFwdEntryTemplate advFwdEntryTemplate = advFwdEntryTemplatesFetcher.getFirst(filter, null, null, null, null, null, Boolean.FALSE);
-
-        if (advFwdEntryTemplate != null) {
-            String pgId = advFwdEntryTemplate.getLocationID();
-            DefaultNetworkPort portGroup = new DefaultNetworkPort();
-            portGroup.setElementId(pgId);
-            portGroup.setParentId(selectDomainId);
-
-            if (BypassFwdPolicy.getIngressAdvFwdEntryTemplates().count() == 1) {
-                BypassFwdPolicy.delete();
-            } else {
-                advFwdEntryTemplate.delete();
-            }
-            deletePolicyGroup(portGroup);
-        }
+        // Clean Bypass Forwarding Policy (if no rule exists completely delete the policy)
+        deleteBypassFwdPolicy(selectDomain, inspPort);
 
         // If the inspection port id has been provided deleted by Id.
         // For now, only one RT is expected for this case: Kubernetes.
